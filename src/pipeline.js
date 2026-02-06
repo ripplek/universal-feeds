@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fetchXFollowing } from './sources/x_bird.js';
 import { rankItems } from './rank.js';
+import { tagAndScore } from './tagging.js';
 import { renderDigestMarkdown } from './render.js';
 
 export async function runDigest({ cfg, date, outDir }) {
@@ -16,8 +17,9 @@ export async function runDigest({ cfg, date, outDir }) {
     items.push(...xItems);
   }
 
-  // Rank + trim
+  // Rank (base) + topic tagging/boost + trim
   items = rankItems(items, cfg);
+  items = tagAndScore(items, cfg);
   items = items.slice(0, cfg.output.max_items || 30);
 
   // Persist JSONL

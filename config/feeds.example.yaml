@@ -12,8 +12,19 @@ platforms:
       mode: following    # following | for_you
       limit: 200
 
-# Topics/entities are optional in MVP; reserved for later ranking/tagging.
-topics: []
+# Default topics: keep MVP digest focused on agentic AI + OpenClaw.
+# Users can edit/replace this list.
+topics:
+  - name: openclaw
+    keywords: ["OpenClaw", "Clawdbot", "Moltbot", "clawd bot", "clawd", "moltbook"]
+    boost: 2.0
+
+  - name: ai-model-releases
+    # Avoid generic words like "released" (too many false positives). Use anchors + specific terms.
+    anchors: ["gpt", "claude", "gemini", "deepseek", "qwen", "llm", "model", "weights"]
+    keywords: ["SWE-bench", "OSWorld", "TerminalBench", "context window", "1m context", "now available", "API", "preview", "beta", "release notes", "benchmark"]
+    boost: 1.3
+
 entities: []
 
 sources:
