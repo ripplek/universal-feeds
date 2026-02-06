@@ -19,6 +19,7 @@ sources:
     url: https://feeds.npr.org/1001/rss.xml
     type: rss
     region: us
+    weight: 1.0
     tags: [news, politics, world]
     notes: stable RSS
 
@@ -26,6 +27,7 @@ sources:
     url: http://rss.cnn.com/rss/cnn_topstories.rss
     type: rss
     region: us
+    weight: 0.95
     tags: [news, world]
     notes: stable RSS
 

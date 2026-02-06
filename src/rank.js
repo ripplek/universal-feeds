@@ -21,7 +21,8 @@ export function rankItems(items, cfg) {
 
       const w = typeof platformWeights?.[x.platform] === 'number' ? platformWeights[x.platform] : 1.0;
       const sourceW = typeof x?.source?.weight === 'number' ? x.source.weight : 1.0;
-      const score = (engagement + recencyBoost) * w * sourceW;
+      const rel = typeof x?.source?.reliability === 'number' ? x.source.reliability : 1.0;
+      const score = (engagement + recencyBoost) * w * sourceW * rel;
       return { ...x, score };
     })
     .sort((a, b) => (b.score || 0) - (a.score || 0));

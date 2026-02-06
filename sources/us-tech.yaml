@@ -36,6 +36,7 @@ sources:
     url: https://news.ycombinator.com/rss
     type: rss
     region: us
+    weight: 1.0
     tags: [tech, startups, ai]
     notes: community-driven; great signal but noisy
 
@@ -43,5 +44,6 @@ sources:
     url: https://www.producthunt.com/feed
     type: rss
     region: us
+    weight: 0.9
     tags: [products, tools, startups]
     notes: good for new tools discovery; needs dedup

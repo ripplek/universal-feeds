@@ -5,6 +5,7 @@ sources:
     url: https://36kr.com/
     type: html
     region: cn
+    weight: 0.75
     tags: [tech, startups, venture, ai]
     notes: HTML extraction; watch for anti-bot
 
@@ -12,6 +13,7 @@ sources:
     url: https://www.huxiu.com/
     type: html
     region: cn
+    weight: 0.75
     tags: [tech, business, ai]
     notes: HTML extraction
 

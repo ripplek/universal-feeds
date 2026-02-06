@@ -5,6 +5,7 @@ sources:
     url: https://www.xinhuanet.com/
     type: html
     region: cn
+    weight: 0.7
     tags: [news, politics, china]
     notes: HTML/sitemap based; large site
 
@@ -12,6 +13,7 @@ sources:
     url: http://www.people.com.cn/
     type: html
     region: cn
+    weight: 0.7
     tags: [news, politics, china]
     notes: HTML extraction
 
@@ -19,5 +21,6 @@ sources:
     url: https://www.thepaper.cn/
     type: html
     region: cn
+    weight: 0.75
     tags: [news, society]
     notes: HTML extraction; watch for dynamic loading
