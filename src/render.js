@@ -33,12 +33,14 @@ function fmtItem(item, cfg) {
 function topicLabel(cfg, name) {
   const mapEn = {
     openclaw: 'OpenClaw / Clawdbot',
-    'ai-model-releases': 'AI model releases',
+    'ai-model-releases-official': 'AI model releases (official)',
+    'ai-model-releases-community': 'AI model releases (community)',
     'agentic-ai': 'Agentic AI / workflows'
   };
   const mapZh = {
     openclaw: 'OpenClaw / Clawdbot 动态',
-    'ai-model-releases': 'AI 模型发布/更新',
+    'ai-model-releases-official': 'AI 模型发布/更新（官方）',
+    'ai-model-releases-community': 'AI 模型发布/更新（社区）',
     'agentic-ai': 'Agentic AI / 工作流'
   };
   const m = cfg?.output?.language === 'zh' ? mapZh : mapEn;

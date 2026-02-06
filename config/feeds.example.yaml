@@ -62,30 +62,30 @@ topics:
     exclude_keywords: ["airdrop", "pump", "memecoin", "token", "ca:", "contract"]
     boost: 1.2
 
-  - name: ai-model-releases
+  - name: ai-model-releases-official
     match: any
-    # Restrict to trusted sources (pack/name) to reduce false positives.
+    # Official sources only
     source_pack_allow: ["sources/us-ai-labs.yaml"]
-    source_name_allow: ["OpenAI News", "Google DeepMind Blog", "Anthropic Claude Opus (landing)", "Anthropic Claude Sonnet (landing)", "Anthropic Claude Haiku (landing)"]
-    # Additionally allow from these domains (when source pack doesn't specify or for X links).
-    allow_domains:
-      - openai.com
-      - anthropic.com
-      - www.anthropic.com
-      - deepmind.google
-      - blog.google
-      - ai.googleblog.com
-      - x.com
-      - github.com
-      - huggingface.co
-      - techcrunch.com
-      - theverge.com
-      - wired.com
-    # Avoid generic words like "released" (too many false positives). Use anchors + specific terms.
-    anchors: ["gpt", "claude", "gemini", "deepseek", "qwen", "llm", "model", "weights", "codex"]
-    keywords: ["introducing", "system card", "release notes", "now available", "API", "preview", "beta", "benchmark", "SWE-bench", "OSWorld", "TerminalBench", "context window", "1m context", "opus", "sonnet", "haiku"]
+    source_name_allow:
+      - OpenAI News
+      - Google DeepMind Blog
+      - Anthropic Claude Opus (landing)
+      - Anthropic Claude Sonnet (landing)
+      - Anthropic Claude Haiku (landing)
+    anchors: ["gpt", "claude", "gemini", "deepseek", "qwen", "llm", "model", "weights", "codex", "opus", "sonnet", "haiku"]
+    keywords: ["introducing", "system card", "release notes", "now available", "API", "preview", "beta", "benchmark", "SWE-bench", "OSWorld", "TerminalBench", "context window", "1m context"]
     exclude_keywords: ["airdrop", "pump", "memecoin", "token", "ca:", "contract"]
-    boost: 1.3
+    boost: 1.35
+
+  - name: ai-model-releases-community
+    match: any
+    platform_allow: ["x"]
+    # Community discussion: allow x.com but keep it clean
+    allow_domains: ["x.com"]
+    anchors: ["gpt", "claude", "gemini", "deepseek", "qwen", "llm", "model", "weights", "codex", "opus", "sonnet", "haiku"]
+    keywords: ["system card", "release notes", "now available", "API", "preview", "beta", "benchmark", "SWE-bench", "OSWorld", "TerminalBench", "context window", "1m context"]
+    exclude_keywords: ["airdrop", "pump", "memecoin", "token", "ca:", "contract", "whitelist", "presale", "launchpad"]
+    boost: 1.05
 
 entities: []
 
