@@ -59,11 +59,18 @@ export async function runDigest({ cfg, date, outDir }) {
   const xCfg = cfg?.platforms?.x?.following || {};
   const includeRT = xCfg.include_retweets !== false;
   const rtPenalty = typeof xCfg.retweet_penalty === 'number' ? xCfg.retweet_penalty : 1.0;
+  const maxRt = typeof xCfg.max_retweets === 'number' ? xCfg.max_retweets : Infinity;
+  let rtCount = 0;
   items = items
     .filter((it) => {
       if (it.platform !== 'x') return true;
       const isRT = /^RT\s+@/i.test(it.text || '');
-      return includeRT ? true : !isRT;
+      if (!includeRT && isRT) return false;
+      if (isRT) {
+        rtCount += 1;
+        if (rtCount > maxRt) return false;
+      }
+      return true;
     })
     .map((it) => {
       if (it.platform !== 'x') return it;

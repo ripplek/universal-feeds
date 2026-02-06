@@ -30,7 +30,7 @@ export function renderDigestMarkdown(items, { cfg, date, fetchedAt }) {
   const subtitle = h(cfg, `Fetched at: ${fetchedAt}`, `抓取时间：${fetchedAt}`);
 
   const sectionTopics = h(cfg, 'By Topic', '按主题');
-  const sectionAll = h(cfg, 'All Items (mixed platforms)', '全部条目（跨平台）');
+  const sectionAll = h(cfg, 'All Items (by platform)', '全部条目（按平台）');
 
   let md = `# ${title}\n\n${subtitle}\n\n`;
 
@@ -52,8 +52,29 @@ export function renderDigestMarkdown(items, { cfg, date, fetchedAt }) {
   md += `## ${sectionAll}\n\n`;
   if (!items.length) {
     md += h(cfg, '_No items._\n', '_暂无内容。_\n');
-  } else {
-    md += items.map(fmtItem).join('\n') + '\n';
+    return md;
+  }
+
+  const platforms = [
+    ['x', h(cfg, 'X (Following)', 'X（关注）')],
+    ['rss', h(cfg, 'Media (RSS)', '媒体（RSS）')],
+    ['v2ex', 'V2EX'],
+    ['youtube', 'YouTube']
+  ];
+
+  for (const [p, label] of platforms) {
+    const group = items.filter((x) => x.platform === p);
+    if (!group.length) continue;
+    md += `### ${label}\n\n`;
+    md += group.map(fmtItem).join('\n') + '\n\n';
+  }
+
+  // Any other platforms
+  const known = new Set(platforms.map(([p]) => p));
+  const other = items.filter((x) => !known.has(x.platform));
+  if (other.length) {
+    md += `### ${h(cfg, 'Other', '其他')}\n\n`;
+    md += other.map(fmtItem).join('\n') + '\n\n';
   }
 
   return md;
