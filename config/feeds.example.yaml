@@ -51,12 +51,15 @@ topics:
   - name: openclaw
     match: any
     keywords: ["OpenClaw", "Clawdbot", "Moltbot", "clawd bot", "clawd", "moltbook"]
+    # Reduce common noise from crypto/meme narratives
+    exclude_keywords: ["airdrop", "pump", "memecoin", "token", "ca:", "contract", "solana", "$clawd", "$molt", "launchpad"]
     boost: 2.0
 
   - name: agentic-ai
     match: any
     anchors: ["agent", "agents", "agentic"]
     keywords: ["workflow", "tooling", "guardrails", "sandbox", "skills", "mcp", "function calling", "orchestration"]
+    exclude_keywords: ["airdrop", "pump", "memecoin", "token", "ca:", "contract"]
     boost: 1.2
 
   - name: ai-model-releases

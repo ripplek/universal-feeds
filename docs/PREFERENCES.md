@@ -27,6 +27,8 @@ topics:
     keywords: ["OpenClaw", "Clawdbot", "Moltbot", "clawd bot"]
     exclude_keywords: []
     platform_allow: ["x", "rss", "v2ex", "youtube"]
+    allow_domains: []
+    block_domains: []
     boost: 1.5
 
   - name: ai-model-releases

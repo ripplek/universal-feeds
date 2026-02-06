@@ -24,12 +24,16 @@ export function tagAndScore(items, cfg) {
     const anchors = Array.isArray(t.anchors) ? t.anchors : [];
     const excludes = Array.isArray(t.exclude_keywords) ? t.exclude_keywords : [];
     const platformAllow = Array.isArray(t.platform_allow) ? t.platform_allow : null;
+    const allowDomains = Array.isArray(t.allow_domains) ? t.allow_domains : null;
+    const blockDomains = Array.isArray(t.block_domains) ? t.block_domains : null;
     const match = t.match === 'all' ? 'all' : 'any';
     return {
       name: t.name,
       boost: typeof t.boost === 'number' ? t.boost : 1.0,
       match,
       platformAllow,
+      allowDomains,
+      blockDomains,
       kws: kws.map((k) => normalizeText(k)).filter(Boolean),
       anchors: anchors.map((k) => normalizeText(k)).filter(Boolean),
       excludes: excludes.map((k) => normalizeText(k)).filter(Boolean)
@@ -57,6 +61,19 @@ export function tagAndScore(items, cfg) {
     for (const t of compiled) {
       if (!t.name) continue;
       if (t.platformAllow && !t.platformAllow.includes(it.platform)) continue;
+
+      // Domain allow/block filters (optional)
+      const domain = (() => {
+        try {
+          return it.url ? new URL(it.url).hostname : null;
+        } catch {
+          return null;
+        }
+      })();
+      if (domain) {
+        if (t.blockDomains && t.blockDomains.includes(domain)) continue;
+        if (t.allowDomains && !t.allowDomains.includes(domain)) continue;
+      }
 
       // Exclude keywords: if any present, skip this topic match.
       if (t.excludes?.length && t.excludes.some((k) => k && hay.includes(k))) continue;
