@@ -48,7 +48,10 @@ export function renderDigestMarkdown(items, { cfg, date, fetchedAt }) {
 
   const sectionTopics = h(cfg, 'By Topic', '按主题');
   const sectionCoverage = h(cfg, 'Topic coverage', '主题覆盖');
-  const sectionAll = h(cfg, 'All Items (by platform)', '全部条目（按平台）');
+  const requireTopic = cfg?.output?.require_topic_match === true;
+  const sectionAll = requireTopic
+    ? h(cfg, 'All matched items (topic-only view)', '全部命中条目（仅主题视图）')
+    : h(cfg, 'All Items (by platform)', '全部条目（按平台）');
 
   let md = `# ${title}\n\n${subtitle}\n\n`;
 
@@ -89,6 +92,16 @@ export function renderDigestMarkdown(items, { cfg, date, fetchedAt }) {
   md += `## ${sectionAll}\n\n`;
   if (!items.length) {
     md += h(cfg, '_No items._\n', '_暂无内容。_\n');
+    return md;
+  }
+
+  if (requireTopic) {
+    // In topic-only view, avoid duplicating platform blocks.
+    md += h(
+      cfg,
+      '_Note: Only items matching configured topics are included. See **By Topic** above._\n',
+      '_说明：仅包含命中已配置主题的条目，详见上方 **按主题**。_\n'
+    );
     return md;
   }
 

@@ -3,7 +3,7 @@ output:
   max_items: 30
   summarize_top_n: 0     # MVP default: 0 (no summarization). Set >0 to enable later.
   recency_hours: 24
-  require_topic_match: false   # if true, only keep items matching any topic
+  require_topic_match: true    # if true, only keep items matching any topic
   max_per_topic: 8             # limit items shown under each topic section
 
 ranking:
