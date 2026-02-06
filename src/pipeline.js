@@ -48,14 +48,34 @@ export async function runDigest({ cfg, date, outDir }) {
   }
 
   // De-noise + de-dup
-  items = filterXNoise(items);
+  items = filterXNoise(items, cfg);
   items = dedupItems(items);
 
-  // Rank (base) + topic tagging/boost + trim
+  // Rank (base) + topic tagging/boost
   items = rankItems(items, cfg);
   items = tagAndScore(items, cfg);
-  // re-sort because tagAndScore can add score boosts
+
+  // Retweet penalty (after topic boosts)
+  const xCfg = cfg?.platforms?.x?.following || {};
+  const includeRT = xCfg.include_retweets !== false;
+  const rtPenalty = typeof xCfg.retweet_penalty === 'number' ? xCfg.retweet_penalty : 1.0;
+  items = items
+    .filter((it) => {
+      if (it.platform !== 'x') return true;
+      const isRT = /^RT\s+@/i.test(it.text || '');
+      return includeRT ? true : !isRT;
+    })
+    .map((it) => {
+      if (it.platform !== 'x') return it;
+      const isRT = /^RT\s+@/i.test(it.text || '');
+      if (!isRT) return it;
+      return { ...it, score: (it.score || 0) * rtPenalty };
+    });
+
+  // re-sort because boosts/penalties changed scores
   items = items.sort((a, b) => (b.score || 0) - (a.score || 0));
+
+  // trim
   items = trimByPlatform(items, cfg);
 
   // Persist JSONL

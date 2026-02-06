@@ -36,12 +36,13 @@ export function renderDigestMarkdown(items, { cfg, date, fetchedAt }) {
 
   // Topic groups (MVP: based on tags)
   const topics = Array.isArray(cfg?.topics) ? cfg.topics : [];
+  const perTopic = cfg?.output?.max_per_topic || 8;
   if (topics.length) {
     md += `## ${sectionTopics}\n\n`;
     for (const t of topics) {
       const name = t.name;
       if (!name) continue;
-      const grouped = items.filter((x) => (x.tags || []).includes(name));
+      const grouped = items.filter((x) => (x.tags || []).includes(name)).slice(0, perTopic);
       if (!grouped.length) continue;
       md += `### ${topicLabel(cfg, name)}\n\n`;
       md += grouped.map(fmtItem).join('\n') + '\n\n';

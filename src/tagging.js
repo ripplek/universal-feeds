@@ -12,9 +12,11 @@ export function tagAndScore(items, cfg) {
   const compiled = topics.map((t) => {
     const kws = Array.isArray(t.keywords) ? t.keywords : [];
     const anchors = Array.isArray(t.anchors) ? t.anchors : [];
+    const match = t.match === 'all' ? 'all' : 'any';
     return {
       name: t.name,
       boost: typeof t.boost === 'number' ? t.boost : 1.0,
+      match,
       kws: kws.map((k) => normalizeText(k)).filter(Boolean),
       anchors: anchors.map((k) => normalizeText(k)).filter(Boolean)
     };
@@ -31,7 +33,10 @@ export function tagAndScore(items, cfg) {
     for (const t of compiled) {
       if (!t.name) continue;
       const anchorOk = !t.anchors.length || t.anchors.some((k) => k && hay.includes(k));
-      const kwOk = !t.kws.length || t.kws.some((k) => k && hay.includes(k));
+      let kwOk;
+      if (!t.kws.length) kwOk = true;
+      else if (t.match === 'all') kwOk = t.kws.every((k) => k && hay.includes(k));
+      else kwOk = t.kws.some((k) => k && hay.includes(k));
       const hit = anchorOk && kwOk;
       if (hit) {
         matched.push(t.name);

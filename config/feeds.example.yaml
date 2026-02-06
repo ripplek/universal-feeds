@@ -4,6 +4,7 @@ output:
   summarize_top_n: 0     # MVP default: 0 (no summarization). Set >0 to enable later.
   recency_hours: 24
   require_topic_match: false   # if true, only keep items matching any topic
+  max_per_topic: 8             # limit items shown under each topic section
 
 ranking:
   platform_weights:
@@ -25,6 +26,9 @@ platforms:
     following:
       mode: following    # following | for_you
       limit: 200
+      include_retweets: true
+      retweet_penalty: 0.35      # multiply score for RTs (0..1)
+      min_text_len: 30           # drop ultra-short low-signal tweets
 
   rss:
     enabled: true
@@ -44,10 +48,18 @@ platforms:
 # Users can edit/replace this list.
 topics:
   - name: openclaw
+    match: any
     keywords: ["OpenClaw", "Clawdbot", "Moltbot", "clawd bot", "clawd", "moltbook"]
     boost: 2.0
 
+  - name: agentic-ai
+    match: any
+    anchors: ["agent", "agents", "agentic"]
+    keywords: ["workflow", "tooling", "guardrails", "sandbox", "skills", "mcp", "function calling", "orchestration"]
+    boost: 1.2
+
   - name: ai-model-releases
+    match: all
     # Avoid generic words like "released" (too many false positives). Use anchors + specific terms.
     anchors: ["gpt", "claude", "gemini", "deepseek", "qwen", "llm", "model", "weights"]
     keywords: ["SWE-bench", "OSWorld", "TerminalBench", "context window", "1m context", "now available", "API", "preview", "beta", "release notes", "benchmark"]
