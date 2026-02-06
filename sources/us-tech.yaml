@@ -1,0 +1,47 @@
+# US Tech / Business — seed sources
+# type: rss|html|api
+# region: us|cn|global
+# tags: free-form topic tags used for filtering/ranking
+
+sources:
+  - name: The Verge
+    url: https://www.theverge.com/rss/index.xml
+    type: rss
+    region: us
+    tags: [tech, gadgets, ai]
+    notes: stable RSS; good for daily tech headlines
+
+  - name: TechCrunch
+    url: https://techcrunch.com/feed/
+    type: rss
+    region: us
+    tags: [startups, venture, tech, ai]
+    notes: stable RSS; sometimes heavy promo content
+
+  - name: WIRED
+    url: https://www.wired.com/feed/rss
+    type: rss
+    region: us
+    tags: [tech, culture, security, ai]
+    notes: stable RSS
+
+  - name: Ars Technica
+    url: https://feeds.arstechnica.com/arstechnica/index
+    type: rss
+    region: us
+    tags: [tech, security, science]
+    notes: stable RSS
+
+  - name: Hacker News (frontpage)
+    url: https://news.ycombinator.com/rss
+    type: rss
+    region: us
+    tags: [tech, startups, ai]
+    notes: community-driven; great signal but noisy
+
+  - name: Product Hunt (newest)
+    url: https://www.producthunt.com/feed
+    type: rss
+    region: us
+    tags: [products, tools, startups]
+    notes: good for new tools discovery; needs dedup

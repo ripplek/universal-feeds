@@ -1,0 +1,31 @@
+# YouTube AI channels — seed sources
+# Use channel RSS: https://www.youtube.com/feeds/videos.xml?channel_id=<ID>
+
+sources:
+  - name: OpenAI (channel)
+    url: https://www.youtube.com/feeds/videos.xml?channel_id=UCXZCJLdBC09xxGZ6gcdrc6A
+    type: rss
+    region: global
+    tags: [ai, openai]
+    notes: official channel RSS
+
+  - name: Google DeepMind (channel)
+    url: https://www.youtube.com/feeds/videos.xml?channel_id=UCm9K6rby98W8JigLoZOh6FQ
+    type: rss
+    region: global
+    tags: [ai, deepmind]
+    notes: official channel RSS
+
+  - name: Anthropic (channel)
+    url: https://www.youtube.com/feeds/videos.xml?channel_id=UCqYPhGiB9tkShZorfgcL2lA
+    type: rss
+    region: global
+    tags: [ai, anthropic]
+    notes: verify channel ID
+
+  - name: Stanford Online (AI talks)
+    url: https://www.youtube.com/feeds/videos.xml?channel_id=UC4k8oSTi8UaeWf0lKqNn8xA
+    type: rss
+    region: global
+    tags: [ai, research, talks]
+    notes: broad; filter by keywords

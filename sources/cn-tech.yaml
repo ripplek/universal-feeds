@@ -1,0 +1,30 @@
+# Mainland China Tech / Business — seed sources
+
+sources:
+  - name: 36氪
+    url: https://36kr.com/
+    type: html
+    region: cn
+    tags: [tech, startups, venture, ai]
+    notes: HTML extraction; watch for anti-bot
+
+  - name: 虎嗅
+    url: https://www.huxiu.com/
+    type: html
+    region: cn
+    tags: [tech, business, ai]
+    notes: HTML extraction
+
+  - name: 少数派
+    url: https://sspai.com/feed
+    type: rss
+    region: cn
+    tags: [tech, apps, productivity]
+    notes: stable RSS
+
+  - name: 机器之心
+    url: https://www.jiqizhixin.com/rss
+    type: rss
+    region: cn
+    tags: [ai, research]
+    notes: RSS available; verify if accessible without JS

@@ -1,0 +1,23 @@
+# Mainland China General News — seed sources
+
+sources:
+  - name: 新华网
+    url: https://www.xinhuanet.com/
+    type: html
+    region: cn
+    tags: [news, politics, china]
+    notes: HTML/sitemap based; large site
+
+  - name: 人民网
+    url: http://www.people.com.cn/
+    type: html
+    region: cn
+    tags: [news, politics, china]
+    notes: HTML extraction
+
+  - name: 澎湃新闻
+    url: https://www.thepaper.cn/
+    type: html
+    region: cn
+    tags: [news, society]
+    notes: HTML extraction; watch for dynamic loading

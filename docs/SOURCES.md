@@ -94,7 +94,7 @@ This document is a **seed list** of sources for the MVP and beyond. It focuses o
 
 ## 4) Curated seed packs (to add)
 
-Planned curated packs in this repo:
+Curated packs in this repo:
 - `sources/us-tech.yaml`
 - `sources/us-general.yaml`
 - `sources/cn-tech.yaml`

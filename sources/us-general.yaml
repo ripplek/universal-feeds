@@ -1,0 +1,37 @@
+# US General News — seed sources
+
+sources:
+  - name: Reuters (RSS directory)
+    url: https://www.reuters.com/tools/rss
+    type: html
+    region: us
+    tags: [news, markets, politics, world]
+    notes: directory page for many RSS feeds; adapter may expand into sub-feeds
+
+  - name: AP News
+    url: https://apnews.com/
+    type: html
+    region: us
+    tags: [news, politics, world]
+    notes: HTML extraction required; no single canonical RSS
+
+  - name: NPR News
+    url: https://feeds.npr.org/1001/rss.xml
+    type: rss
+    region: us
+    tags: [news, politics, world]
+    notes: stable RSS
+
+  - name: CNN Top Stories
+    url: http://rss.cnn.com/rss/cnn_topstories.rss
+    type: rss
+    region: us
+    tags: [news, world]
+    notes: stable RSS
+
+  - name: BBC World
+    url: http://feeds.bbci.co.uk/news/world/rss.xml
+    type: rss
+    region: global
+    tags: [news, world]
+    notes: global baseline; good for dedup vs US sources
