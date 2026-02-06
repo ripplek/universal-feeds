@@ -14,44 +14,56 @@
 #
 
 sources:
-  # 1) FreeWeChat profile (public mirror)
-  # Route example (replace <id>):
-  #   /freewechat/profile/<id>
-  - name: WeChat (FreeWeChat) — profile (TODO)
-    type: rss
-    rsshub_route: freewechat/profile/<id>
-    region: cn
-    tags: [wechat, hot, cn]
-    notes: Fill <id> (FreeWeChat profile id)
+  # Strategy (MVP): use Sogou provider via RSSHub.
+  # This works as a best-effort way to follow public posts by account name.
+  # If any account fails to resolve, we can switch that specific one to another provider (ce/data258/wechat2rss/freewechat).
 
-  # 2) Sogou WeChat search (keyword based)
-  # Route example:
-  #   /wechat/sogou/<query>
-  - name: WeChat (Sogou) — keyword hot (TODO)
+  - name: 华尔街见闻 (WeChat, via Sogou)
     type: rss
-    rsshub_route: wechat/sogou/<query>
+    rsshub_route: wechat/sogou/华尔街见闻
     region: cn
-    tags: [wechat, hot, cn]
-    notes: Replace <query> with keyword (e.g. AI, OpenClaw)
+    tags: [wechat, cn, finance, news]
+    notes: Account name query via Sogou
 
-  # 3) Other providers supported by RSSHub (placeholders)
-  - name: WeChat — provider ce (TODO)
+  - name: 机器之心 (WeChat, via Sogou)
+    type: rss
+    rsshub_route: wechat/sogou/机器之心
+    region: cn
+    tags: [wechat, cn, ai, research]
+    notes: Account name query via Sogou
+
+  - name: AI寒武纪 (WeChat, via Sogou)
+    type: rss
+    rsshub_route: wechat/sogou/AI寒武纪
+    region: cn
+    tags: [wechat, cn, ai]
+    notes: Account name query via Sogou
+
+  # Other providers supported by RSSHub (templates, use when Sogou is blocked/unreliable)
+  - name: WeChat — provider ce (template)
     type: rss
     rsshub_route: wechat/ce/<id>
     region: cn
     tags: [wechat, cn]
-    notes: Provider-based feed; fill <id>
+    notes: Provider-based feed; replace <id>
 
-  - name: WeChat — provider data258 (TODO)
+  - name: WeChat — provider data258 (template)
     type: rss
     rsshub_route: wechat/data258/<id>
     region: cn
     tags: [wechat, cn]
-    notes: Provider-based feed; fill <id>
+    notes: Provider-based feed; replace <id>
 
-  - name: WeChat — provider wechat2rss (TODO)
+  - name: WeChat — provider wechat2rss (template)
     type: rss
     rsshub_route: wechat/wechat2rss/<id>
     region: cn
     tags: [wechat, cn]
-    notes: Provider-based feed; fill <id>
+    notes: Provider-based feed; replace <id>
+
+  - name: WeChat — FreeWeChat profile (template)
+    type: rss
+    rsshub_route: freewechat/profile/<id>
+    region: cn
+    tags: [wechat, cn]
+    notes: Replace <id> (FreeWeChat profile id)
