@@ -103,7 +103,12 @@ export async function fetchRssFromPacks({ packs = [], fetchedAt, maxPerSource = 
     const sources = Array.isArray(cfg?.sources) ? cfg.sources : [];
 
     for (const s of sources) {
-      const url = s.url;
+      // Allow RSSHub routes as shorthand
+      let url = s.url;
+      if (!url && s.rsshub_route) {
+        const { rsshubUrl } = await import('../rsshub.js');
+        url = rsshubUrl(globalThis.__UF_CFG || {}, s.rsshub_route);
+      }
       if (!url) continue;
 
       if (s.type === 'rss') {

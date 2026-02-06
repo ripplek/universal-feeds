@@ -95,6 +95,9 @@ entities: []
 #     aliases: ["NVIDIA", "英伟达", "NVDA"]
 #     boost: 1.1
 
+rsshub:
+  base_url: https://rsshub.app
+
 sources:
   allow_domains: []
   block_domains: []

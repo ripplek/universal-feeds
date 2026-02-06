@@ -12,6 +12,9 @@ import { trimByPlatform } from './trim.js';
 import { renderDigestMarkdown } from './render.js';
 
 export async function runDigest({ cfg, date, outDir }) {
+  // Make cfg available for adapters that need it (MVP shortcut; replace with explicit params later)
+  globalThis.__UF_CFG = cfg;
+
   const fetchedAt = new Date().toISOString();
   let items = [];
 
