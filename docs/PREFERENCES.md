@@ -1,0 +1,47 @@
+# Preferences spec (draft)
+
+A user-defined config that controls what the digest includes.
+
+## Example (YAML)
+
+```yaml
+output:
+  language: [en, zh]
+  max_items: 30
+  summarize_top_n: 10
+  recency_hours: 24
+
+platforms:
+  x:
+    enabled: true
+    sources: [search, following]
+  v2ex:
+    enabled: true
+    sources: [trending]
+  rss:
+    enabled: true
+
+topics:
+  - name: openclaw
+    keywords: ["OpenClaw", "Clawdbot", "Moltbot", "clawd bot"]
+    boost: 1.5
+
+  - name: ai-model-releases
+    keywords: ["released", "launch", "new model", "weights", "SOTA", "benchmark"]
+    boost: 1.2
+
+entities:
+  - name: NVIDIA
+    tickers: [NVDA]
+    aliases: ["NVIDIA", "英伟达"]
+
+sources:
+  allow_domains: []
+  block_domains: []
+  allow_authors: []
+  block_authors: []
+```
+
+## Notes
+- This file is compiled into platform-specific queries.
+- The adapters are responsible for translating keywords into the target platform syntax.
