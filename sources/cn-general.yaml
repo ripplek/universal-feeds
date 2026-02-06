@@ -6,6 +6,7 @@ sources:
     type: html
     region: cn
     weight: 0.7
+    reliability: 0.75
     tags: [news, politics, china]
     notes: HTML/sitemap based; large site
 
@@ -14,6 +15,7 @@ sources:
     type: html
     region: cn
     weight: 0.7
+    reliability: 0.75
     tags: [news, politics, china]
     notes: HTML extraction
 
@@ -22,5 +24,6 @@ sources:
     type: html
     region: cn
     weight: 0.75
+    reliability: 0.8
     tags: [news, society]
     notes: HTML extraction; watch for dynamic loading

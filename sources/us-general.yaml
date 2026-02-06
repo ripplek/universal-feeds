@@ -5,6 +5,7 @@ sources:
     url: https://www.reuters.com/tools/rss
     type: html
     region: us
+    reliability: 0.8
     tags: [news, markets, politics, world]
     notes: directory page for many RSS feeds; adapter may expand into sub-feeds
 
@@ -12,6 +13,7 @@ sources:
     url: https://apnews.com/
     type: html
     region: us
+    reliability: 0.8
     tags: [news, politics, world]
     notes: HTML extraction required; no single canonical RSS
 
@@ -20,6 +22,7 @@ sources:
     type: rss
     region: us
     weight: 1.0
+    reliability: 0.95
     tags: [news, politics, world]
     notes: stable RSS
 
@@ -28,6 +31,7 @@ sources:
     type: rss
     region: us
     weight: 0.95
+    reliability: 0.9
     tags: [news, world]
     notes: stable RSS
 
@@ -35,5 +39,6 @@ sources:
     url: http://feeds.bbci.co.uk/news/world/rss.xml
     type: rss
     region: global
+    reliability: 0.95
     tags: [news, world]
     notes: global baseline; good for dedup vs US sources

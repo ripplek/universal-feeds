@@ -8,6 +8,7 @@ sources:
     url: https://www.theverge.com/rss/index.xml
     type: rss
     region: us
+    reliability: 0.95
     tags: [tech, gadgets, ai]
     notes: stable RSS; good for daily tech headlines
 
@@ -15,6 +16,7 @@ sources:
     url: https://techcrunch.com/feed/
     type: rss
     region: us
+    reliability: 0.95
     tags: [startups, venture, tech, ai]
     notes: stable RSS; sometimes heavy promo content
 
@@ -22,6 +24,7 @@ sources:
     url: https://www.wired.com/feed/rss
     type: rss
     region: us
+    reliability: 0.95
     tags: [tech, culture, security, ai]
     notes: stable RSS
 
@@ -29,6 +32,7 @@ sources:
     url: https://feeds.arstechnica.com/arstechnica/index
     type: rss
     region: us
+    reliability: 0.95
     tags: [tech, security, science]
     notes: stable RSS
 
@@ -37,6 +41,7 @@ sources:
     type: rss
     region: us
     weight: 1.0
+    reliability: 0.9
     tags: [tech, startups, ai]
     notes: community-driven; great signal but noisy
 
@@ -45,5 +50,6 @@ sources:
     type: rss
     region: us
     weight: 0.9
+    reliability: 0.85
     tags: [products, tools, startups]
     notes: good for new tools discovery; needs dedup

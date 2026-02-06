@@ -21,6 +21,7 @@ sources:
     url: https://sspai.com/feed
     type: rss
     region: cn
+    reliability: 0.9
     tags: [tech, apps, productivity]
     notes: stable RSS
 
@@ -28,5 +29,6 @@ sources:
     url: https://www.jiqizhixin.com/rss
     type: rss
     region: cn
+    reliability: 0.9
     tags: [ai, research]
     notes: RSS available; verify if accessible without JS

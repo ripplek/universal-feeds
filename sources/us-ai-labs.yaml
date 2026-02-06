@@ -6,6 +6,7 @@ sources:
     type: rss
     region: us
     weight: 1.2
+    reliability: 1.0
     tags: [ai, openai, model-releases]
     notes: Official OpenAI news feed (includes product/model announcements)
 
@@ -14,6 +15,7 @@ sources:
     type: rss
     region: global
     weight: 1.15
+    reliability: 1.0
     tags: [ai, deepmind, research]
     notes: Official DeepMind blog RSS
 
@@ -22,6 +24,7 @@ sources:
     type: html
     region: us
     weight: 1.15
+    reliability: 0.85
     tags: [ai, anthropic, model-releases]
     notes: Public landing page (HTML). Used as a best-effort source when no RSS is available.
 
@@ -30,6 +33,7 @@ sources:
     type: html
     region: us
     weight: 1.10
+    reliability: 0.85
     tags: [ai, anthropic, model-releases]
     notes: Public landing page (HTML).
 
@@ -38,5 +42,6 @@ sources:
     type: html
     region: us
     weight: 1.05
+    reliability: 0.85
     tags: [ai, anthropic, model-releases]
     notes: Public landing page (HTML).
