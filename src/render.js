@@ -27,7 +27,9 @@ function fmtItem(item, cfg) {
     }
   }
 
-  return `- [${plat}] ${head}${author ? ` — ${author}` : ''}${tags} (score ${score})${hit}\n  ${item.url}`;
+  const link = item?.debug?.unfurl?.finalUrl;
+  const extra = link && link !== item.url ? `\n  Link: ${link}` : '';
+  return `- [${plat}] ${head}${author ? ` — ${author}` : ''}${tags} (score ${score})${hit}\n  ${item.url}${extra}`;
 }
 
 function topicLabel(cfg, name) {

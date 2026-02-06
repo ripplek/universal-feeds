@@ -6,6 +6,7 @@ import { fetchV2exHot } from './sources/v2ex.js';
 import { fetchYouTubeFromPacks } from './sources/youtube.js';
 import { dedupItems } from './dedup.js';
 import { filterXNoise } from './filters.js';
+import { unfurlUrl } from './unfurl.js';
 import { rankItems } from './rank.js';
 import { tagAndScore } from './tagging.js';
 import { trimByPlatform } from './trim.js';
@@ -77,6 +78,82 @@ export async function runDigest({ cfg, date, outDir }) {
   // De-noise + de-dup
   items = filterXNoise(items, cfg);
   items = dedupItems(items);
+
+  // Hard recency filter (product behavior): drop items older than recency_hours
+  // when publishedAt is known.
+  const recencyH = cfg?.output?.recency_hours ?? 24;
+  const nowMs = Date.now();
+  items = items.filter((it) => {
+    const ts = Date.parse(it.publishedAt || '');
+    if (!Number.isFinite(ts)) return true;
+    const ageH = (nowMs - ts) / 36e5;
+    return ageH <= recencyH;
+  });
+
+  // X low-info enrichment: if a tweet is mostly link/mentions, unfurl the first URL
+  // and display the destination title in the digest.
+  const xCfg2 = cfg?.platforms?.x?.following || {};
+  const unfurlEnabled = xCfg2?.unfurl?.enabled !== false;
+  const unfurlMax = xCfg2?.unfurl?.max_per_run ?? 10;
+  const unfurlTimeoutMs = xCfg2?.unfurl?.timeout_ms ?? 8000;
+  const cachePathUnfurl = path.join(outDir, 'state-unfurl.json');
+
+  let unfurlCache = {};
+  try {
+    unfurlCache = JSON.parse(fs.readFileSync(cachePathUnfurl, 'utf8'));
+  } catch {
+    unfurlCache = {};
+  }
+
+  const urlRe = /https?:\/\/\S+/gi;
+  const stripEff = (t) => String(t || '')
+    .replace(/https?:\/\/\S+/gi, ' ')
+    .replace(/@[A-Za-z0-9_]{1,30}/g, ' ')
+    .replace(/#[\p{L}\p{N}_]{2,}/gu, ' ')
+    .replace(/[\s\u200B]+/g, ' ')
+    .trim();
+
+  if (unfurlEnabled) {
+    let did = 0;
+    for (let i = 0; i < items.length && did < unfurlMax; i++) {
+      const it = items[i];
+      if (it.platform !== 'x') continue;
+      if (it?.debug?.unfurl?.title) continue;
+
+      const text = it.text || '';
+      const eff = stripEff(text);
+      if (eff.length >= 25) continue;
+
+      const urls = text.match(urlRe) || [];
+      if (!urls.length) continue;
+
+      const u0 = urls[0];
+      const cached = unfurlCache[u0];
+      let meta = cached;
+      if (!meta) {
+        meta = await unfurlUrl(u0, { timeoutMs: unfurlTimeoutMs });
+        unfurlCache[u0] = meta;
+        did += 1;
+      }
+
+      if (meta?.title || meta?.finalUrl) {
+        items[i] = {
+          ...it,
+          title: it.title || meta.title,
+          debug: {
+            ...(it.debug || {}),
+            unfurl: meta
+          }
+        };
+      }
+    }
+
+    try {
+      fs.writeFileSync(cachePathUnfurl, JSON.stringify(unfurlCache, null, 2) + '\n', 'utf8');
+    } catch {
+      // ignore cache write
+    }
+  }
 
   // Rank (base) + topic tagging/boost
   items = rankItems(items, cfg);

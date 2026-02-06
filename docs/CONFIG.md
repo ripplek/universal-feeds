@@ -51,6 +51,22 @@ platforms:
 ```
 
 - `timeout_ms` is passed to `bird --timeout` to avoid home timeline timeouts.
+- `min_effective_len` / `min_effective_tokens` drop low-information tweets (e.g. only mentions + a link).
+- `unfurl.*` expands the first URL for low-information tweets and uses the destination page title in the digest.
+
+Example:
+
+```yaml
+platforms:
+  x:
+    following:
+      min_effective_len: 20
+      min_effective_tokens: 6
+      unfurl:
+        enabled: true
+        max_per_run: 10
+        timeout_ms: 8000
+```
 
 ### rsshub
 
