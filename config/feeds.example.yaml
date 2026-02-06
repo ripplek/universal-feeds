@@ -29,7 +29,8 @@ platforms:
     sources: [following]
     following:
       mode: following    # following | for_you
-      limit: 200
+      limit: 120
+      timeout_ms: 60000
       include_retweets: true
       max_retweets: 6            # cap RTs allowed in the final ranked list
       retweet_penalty: 0.35      # multiply score for RTs (0..1)

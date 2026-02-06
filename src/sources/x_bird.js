@@ -59,10 +59,11 @@ function normalizeTweet(t, fetchedAt) {
   };
 }
 
-export async function fetchXFollowing({ limit = 200, mode = 'following', fetchedAt }) {
+export async function fetchXFollowing({ limit = 200, mode = 'following', fetchedAt, timeoutMs = 60000 }) {
   const args = ['home'];
   if (mode === 'following') args.push('--following');
   args.push('-n', String(limit), '--json-full', '--plain', '--quote-depth', '0');
+  if (timeoutMs && Number.isFinite(timeoutMs)) args.push('--timeout', String(timeoutMs));
 
   // Note: bird may emit warnings to stderr about Safari cookies; that’s fine.
   const { stdout } = await execBird(args);

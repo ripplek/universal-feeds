@@ -22,7 +22,8 @@ export async function runDigest({ cfg, date, outDir }) {
   if (cfg?.platforms?.x?.enabled && (cfg?.platforms?.x?.sources || []).includes('following')) {
     const limit = cfg.platforms.x.following?.limit ?? 200;
     const mode = cfg.platforms.x.following?.mode ?? 'following';
-    const xItems = await fetchXFollowing({ limit, mode, fetchedAt });
+    const timeoutMs = cfg.platforms.x.following?.timeout_ms ?? 60000;
+    const xItems = await fetchXFollowing({ limit, mode, timeoutMs, fetchedAt });
     items.push(...xItems);
   }
 

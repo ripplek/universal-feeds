@@ -37,6 +37,21 @@ ranking:
 
 Enable/disable adapters and select source modes.
 
+#### X (bird)
+
+```yaml
+platforms:
+  x:
+    enabled: true
+    sources: [following]
+    following:
+      mode: following
+      limit: 120
+      timeout_ms: 60000
+```
+
+- `timeout_ms` is passed to `bird --timeout` to avoid home timeline timeouts.
+
 ### rsshub
 
 - `base_url`: e.g. `https://rsshub.app`
