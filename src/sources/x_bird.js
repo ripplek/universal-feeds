@@ -66,29 +66,25 @@ export async function fetchXFollowing({ limit = 200, mode = 'following', fetched
   // Note: bird may emit warnings to stderr about Safari cookies; that’s fine.
   const { stdout } = await execBird(args);
 
-  // bird may print warnings to stdout (e.g. Safari cookie EPERM). Strip leading noise.
-  const start = (() => {
-    // bird may print lines like "[warn] ..." to stdout.
-    // We want the first '[' or '{' that is NOT a bracketed log prefix.
-    const badPrefixes = ['[warn]', '[info]', '[error]', '[debug]'];
-    let i = -1;
-    while (true) {
-      i = stdout.indexOf('[', i + 1);
-      if (i === -1) break;
-      const isBad = badPrefixes.some((p) => stdout.startsWith(p, i));
-      if (isBad) continue;
-      return i;
+  // bird may print warnings to stdout (e.g. Safari cookie EPERM).
+  // Robust strategy: find the first line that *starts* with JSON.
+  const lines = stdout.split(/\r?\n/);
+  let firstJsonLine = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i].trimStart();
+    if (l.startsWith('[') || l.startsWith('{')) {
+      firstJsonLine = i;
+      break;
     }
-    // Fallback: object JSON
-    return stdout.indexOf('{');
-  })();
-  const jsonText = start >= 0 ? stdout.slice(start) : stdout;
+  }
+  const jsonText = lines.slice(firstJsonLine).join('\n').trim();
 
   let arr;
   try {
     arr = JSON.parse(jsonText);
-  } catch {
-    throw new Error(`bird output not JSON after stripping warnings (first 200 chars): ${jsonText.slice(0, 200)}`);
+  } catch (e) {
+    const msg = e?.message || String(e);
+    throw new Error(`bird output not JSON after stripping warnings: ${msg}\n(first 200 chars): ${jsonText.slice(0, 200)}`);
   }
 
   if (!Array.isArray(arr)) return [];

@@ -68,6 +68,12 @@ topics:
 
 entities: []
 
+# Optional: entity matching (for future: stocks/companies). Example:
+# entities:
+#   - name: NVIDIA
+#     aliases: ["NVIDIA", "英伟达", "NVDA"]
+#     boost: 1.1
+
 sources:
   allow_domains: []
   block_domains: []

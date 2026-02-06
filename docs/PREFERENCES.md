@@ -23,7 +23,10 @@ platforms:
 
 topics:
   - name: openclaw
+    match: any
     keywords: ["OpenClaw", "Clawdbot", "Moltbot", "clawd bot"]
+    exclude_keywords: []
+    platform_allow: ["x", "rss", "v2ex", "youtube"]
     boost: 1.5
 
   - name: ai-model-releases
@@ -32,8 +35,8 @@ topics:
 
 entities:
   - name: NVIDIA
-    tickers: [NVDA]
-    aliases: ["NVIDIA", "英伟达"]
+    aliases: ["NVIDIA", "英伟达", "NVDA"]
+    boost: 1.1
 
 sources:
   allow_domains: []

@@ -9,6 +9,7 @@ function fmtItem(item, cfg) {
   const author = item.author?.handle || item.author?.name;
   const score = typeof item.score === 'number' ? item.score.toFixed(2) : '';
   const tags = (item.tags || []).length ? ` [${(item.tags || []).join(', ')}]` : '';
+  const plat = item.platform ? `${item.platform}` : '';
 
   let hit = '';
   const hits = item?.debug?.tagHits;
@@ -26,17 +27,19 @@ function fmtItem(item, cfg) {
     }
   }
 
-  return `- ${head}${author ? ` — ${author}` : ''}${tags} (score ${score})${hit}\n  ${item.url}`;
+  return `- [${plat}] ${head}${author ? ` — ${author}` : ''}${tags} (score ${score})${hit}\n  ${item.url}`;
 }
 
 function topicLabel(cfg, name) {
   const mapEn = {
     openclaw: 'OpenClaw / Clawdbot',
-    'ai-model-releases': 'AI model releases'
+    'ai-model-releases': 'AI model releases',
+    'agentic-ai': 'Agentic AI / workflows'
   };
   const mapZh = {
     openclaw: 'OpenClaw / Clawdbot 动态',
-    'ai-model-releases': 'AI 模型发布/更新'
+    'ai-model-releases': 'AI 模型发布/更新',
+    'agentic-ai': 'Agentic AI / 工作流'
   };
   const m = cfg?.output?.language === 'zh' ? mapZh : mapEn;
   return m[name] || name;
@@ -48,6 +51,7 @@ export function renderDigestMarkdown(items, { cfg, date, fetchedAt }) {
 
   const sectionTopics = h(cfg, 'By Topic', '按主题');
   const sectionCoverage = h(cfg, 'Topic coverage', '主题覆盖');
+  const sectionHighlights = h(cfg, 'Topic highlights', '主题要点');
   const requireTopic = cfg?.output?.require_topic_match === true;
   const sectionAll = requireTopic
     ? h(cfg, 'All matched items (topic-only view)', '全部命中条目（仅主题视图）')
@@ -61,11 +65,14 @@ export function renderDigestMarkdown(items, { cfg, date, fetchedAt }) {
   if (topics.length) {
     // Coverage section
     md += `## ${sectionCoverage}\n\n`;
+    const groupedByTopic = new Map();
     for (const t of topics) {
       const name = t.name;
       if (!name) continue;
       const groupedAll = items.filter((x) => (x.tags || []).includes(name));
       if (!groupedAll.length) continue;
+      groupedByTopic.set(name, groupedAll);
+
       const byPlatform = groupedAll.reduce((acc, it) => {
         acc[it.platform] = (acc[it.platform] || 0) + 1;
         return acc;
@@ -75,6 +82,21 @@ export function renderDigestMarkdown(items, { cfg, date, fetchedAt }) {
         .map(([p, n]) => `${p}:${n}`)
         .join(', ');
       md += `- ${topicLabel(cfg, name)}: ${groupedAll.length} (${parts})\n`;
+    }
+    md += `\n`;
+
+    // Highlights (cheap extractive bullets)
+    md += `## ${sectionHighlights}\n\n`;
+    for (const [name, groupedAll] of groupedByTopic.entries()) {
+      const top = groupedAll.slice(0, 2);
+      if (!top.length) continue;
+      md += `- ${topicLabel(cfg, name)}\n`;
+      for (const it of top) {
+        const title = it.title?.trim();
+        const text = it.text?.trim();
+        const head = title || (text ? text.slice(0, 90) : '');
+        md += `  - [${it.platform}] ${head}\n`;
+      }
     }
     md += `\n`;
 
