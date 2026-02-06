@@ -17,9 +17,9 @@ Preferences (YAML/JSON)
 
 ### 1) Adapters
 - `adapters/x_bird.*`
-- `adapters/rss.*`
-- `adapters/v2ex.*`
-- `adapters/youtube.*`
+- `adapters/rss.*` (or `src/sources/rss.js` in early MVP)
+- `adapters/v2ex.*` (or `src/sources/v2ex.js` in early MVP)
+- `adapters/youtube.*` (or `src/sources/youtube.js` in early MVP)
 - (later) `adapters/weibo.*`, `adapters/wechat_hot.*`, `adapters/tiktok.*`
 
 Adapters should expose a small interface:

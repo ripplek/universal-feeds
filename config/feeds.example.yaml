@@ -3,6 +3,20 @@ output:
   max_items: 30
   summarize_top_n: 0     # MVP default: 0 (no summarization). Set >0 to enable later.
   recency_hours: 24
+  require_topic_match: false   # if true, only keep items matching any topic
+
+ranking:
+  platform_weights:
+    x: 0.35
+    rss: 1.0
+    v2ex: 0.9
+    youtube: 0.8
+
+  max_per_platform:
+    x: 12
+    rss: 12
+    v2ex: 6
+    youtube: 6
 
 platforms:
   x:
@@ -11,6 +25,20 @@ platforms:
     following:
       mode: following    # following | for_you
       limit: 200
+
+  rss:
+    enabled: true
+    sources: [trending]
+    packs: ["sources/us-tech.yaml", "sources/us-general.yaml", "sources/cn-tech.yaml", "sources/cn-general.yaml"]
+
+  v2ex:
+    enabled: true
+    sources: [trending]
+
+  youtube:
+    enabled: true
+    sources: [trending]
+    packs: ["sources/youtube-ai-channels.yaml"]
 
 # Default topics: keep MVP digest focused on agentic AI + OpenClaw.
 # Users can edit/replace this list.

@@ -7,14 +7,20 @@ function hoursAgo(iso) {
 
 export function rankItems(items, cfg) {
   const recencyHours = cfg?.output?.recency_hours ?? 24;
+  const platformWeights = cfg?.ranking?.platform_weights || {};
 
   return items
     .map((x) => {
       const m = x.metrics || {};
-      const engagement = (m.like || 0) + 2 * (m.repost || 0) + (m.reply || 0) + (m.quote || 0);
+      const engagementRaw = (m.like || 0) + 2 * (m.repost || 0) + (m.reply || 0) + (m.quote || 0);
+      // log scale so X doesn't drown everything.
+      const engagement = Math.log1p(engagementRaw);
+
       const ageH = hoursAgo(x.publishedAt);
       const recencyBoost = ageH <= recencyHours ? (recencyHours - ageH) / recencyHours : 0;
-      const score = engagement + recencyBoost;
+
+      const w = typeof platformWeights?.[x.platform] === 'number' ? platformWeights[x.platform] : 1.0;
+      const score = (engagement + recencyBoost) * w;
       return { ...x, score };
     })
     .sort((a, b) => (b.score || 0) - (a.score || 0));

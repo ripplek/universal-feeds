@@ -30,7 +30,7 @@ export function renderDigestMarkdown(items, { cfg, date, fetchedAt }) {
   const subtitle = h(cfg, `Fetched at: ${fetchedAt}`, `抓取时间：${fetchedAt}`);
 
   const sectionTopics = h(cfg, 'By Topic', '按主题');
-  const sectionAll = h(cfg, 'All Items', '全部条目');
+  const sectionAll = h(cfg, 'All Items (mixed platforms)', '全部条目（跨平台）');
 
   let md = `# ${title}\n\n${subtitle}\n\n`;
 
