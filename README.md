@@ -26,25 +26,32 @@ Platforms in scope (phased):
 
 ## Status
 
-- **Stage:** MVP executable skeleton (X Following) + docs
-- **Next:** add RSS/V2EX/YouTube adapters + preferences-based filtering
+- **Stage:** usable CLI + skill entrypoint; actively iterating
+- **CI:** GitHub Actions runs unit tests + digest smoke test
 
-## Quick start (MVP)
+## Install
 
 ```bash
-cd projects/universal-feeds
+npm ci
+```
 
-# 1) install deps
-npm i
+## Quick start
 
-# 2) (optional) copy config
+```bash
+# (optional) copy config
 cp config/feeds.example.yaml config/feeds.yaml
 
-# 3) run digest (defaults to config/feeds.yaml if present, otherwise uses example config)
-node bin/digest --date today
+# run digest
+node bin/digest --config config/feeds.yaml --date today
 
 # outputs
 ls out/
+```
+
+Run tests:
+
+```bash
+npm test
 ```
 
 X Following requires you to be logged into x.com in a local Chrome profile that `bird` can read.
@@ -58,6 +65,14 @@ X Following requires you to be logged into x.com in a local Chrome profile that 
 - Source seed list: `docs/SOURCES.md`
 - RSSHub notes: `docs/RSSHUB.md`
 
+## Contributing
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) and the PR template.
+
+## Security
+
+See [`SECURITY.md`](SECURITY.md).
+
 ## License
 
-MIT (see `LICENSE`).
+MIT (see [`LICENSE`](LICENSE)).
