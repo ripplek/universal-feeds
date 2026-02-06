@@ -37,16 +37,22 @@ npm ci
 
 ## Quick start
 
+### Option A — Demo (always produces output)
+
 ```bash
-# (optional) copy config
-cp config/feeds.example.yaml config/feeds.yaml
-
-# run digest
-node bin/digest --config config/feeds.yaml --date today
-
-# outputs
-ls out/
+node bin/digest --config config/feeds.demo.yaml --date today
 ```
+
+### Option B — Topic-only daily briefing (recommended)
+
+```bash
+cp config/feeds.example.yaml config/feeds.yaml
+node bin/digest --config config/feeds.yaml --date today
+```
+
+Outputs:
+- `out/items-YYYY-MM-DD.jsonl`
+- `out/digest-YYYY-MM-DD.md`
 
 Run tests:
 
@@ -55,6 +61,41 @@ npm test
 ```
 
 X Following requires you to be logged into x.com in a local Chrome profile that `bird` can read.
+
+## Configuration
+
+Configs are YAML. Start from:
+- `config/feeds.demo.yaml` — demo config (`require_topic_match: false`)
+- `config/feeds.example.yaml` — topic-only config (ship your real preferences here)
+
+A source entry supports optional quality knobs:
+
+```yaml
+- name: OpenAI News
+  url: https://openai.com/news/rss.xml
+  type: rss
+  weight: 1.2        # ranking preference
+  reliability: 1.0   # 0..1 stability/trust
+  tags: [ai, model-releases]
+```
+
+## What the output looks like
+
+Excerpt from `out/digest-YYYY-MM-DD.md`:
+
+```text
+## All Items (by platform)
+
+### Media (RSS)
+- [rss] ... (score 0.94)
+  https://...
+
+### YouTube
+- [youtube] ... (score 0.54)
+  https://...
+```
+
+See `docs/EXAMPLES.md` for more.
 
 ## Quick links
 

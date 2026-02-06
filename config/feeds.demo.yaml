@@ -1,0 +1,54 @@
+# Demo config for README screenshots/snippets.
+# - No X (no cookies in CI)
+# - Topic matching OFF so output is never empty
+
+output:
+  language: en
+  max_items: 20
+  summarize_top_n: 0
+  recency_hours: 72
+  require_topic_match: false
+  max_per_topic: 8
+
+ranking:
+  platform_weights:
+    rss: 1.0
+    v2ex: 0.9
+    youtube: 0.8
+
+  max_per_platform:
+    rss: 12
+    v2ex: 6
+    youtube: 6
+
+platforms:
+  x:
+    enabled: false
+
+  rss:
+    enabled: true
+    sources: [trending]
+    packs:
+      - sources/us-ai-labs.yaml
+      - sources/us-tech.yaml
+      - sources/us-general.yaml
+
+  v2ex:
+    enabled: true
+    sources: [trending]
+
+  youtube:
+    enabled: true
+    sources: [trending]
+    packs:
+      - sources/youtube-ai-channels.yaml
+
+rsshub:
+  base_url: https://rsshub.app
+
+html_sources:
+  min_change_length: 30
+  force_refresh_days: 7
+
+topics: []
+entities: []
