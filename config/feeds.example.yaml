@@ -7,6 +7,10 @@ output:
   max_per_topic: 8             # limit items shown under each topic section
 
 ranking:
+  # Prevent a single source (e.g. a WeChat album) from flooding a topic section.
+  # 0 = disabled
+  max_per_source_per_topic: 2
+
   platform_weights:
     x: 0.35
     rss: 1.0

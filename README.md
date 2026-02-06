@@ -99,6 +99,7 @@ See `docs/EXAMPLES.md` for copy/paste recipes and `docs/SHOWCASE.md` for a contr
 
 ## Quick links
 
+- Config reference: `docs/CONFIG.md`
 - Product doc: `docs/PRD.md`
 - Architecture: `docs/ARCHITECTURE.md`
 - Roadmap: `docs/ROADMAP.md`

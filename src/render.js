@@ -51,6 +51,22 @@ function topicLabel(cfg, name) {
   return m[name] || name;
 }
 
+function capPerSource(items, { maxPerSource = 0 } = {}) {
+  const n = Number.isFinite(maxPerSource) ? maxPerSource : 0;
+  if (!n || n <= 0) return items;
+
+  const counts = new Map();
+  const out = [];
+  for (const it of items) {
+    const key = it?.source?.name || it?.source?.pack || it?.author?.handle || it?.author?.name || it?.platform || 'unknown';
+    const c = counts.get(key) || 0;
+    if (c >= n) continue;
+    counts.set(key, c + 1);
+    out.push(it);
+  }
+  return out;
+}
+
 export function renderDigestMarkdown(items, { cfg, date, fetchedAt }) {
   const title = h(cfg, `Daily Digest — ${date}`, `每日简报 — ${date}`);
   const subtitle = h(cfg, `Fetched at: ${fetchedAt}`, `抓取时间：${fetchedAt}`);
@@ -69,6 +85,7 @@ export function renderDigestMarkdown(items, { cfg, date, fetchedAt }) {
   // Topic groups (MVP: based on tags)
   const topics = Array.isArray(cfg?.topics) ? cfg.topics : [];
   const perTopic = cfg?.output?.max_per_topic || 8;
+  const maxPerSourcePerTopic = cfg?.ranking?.max_per_source_per_topic || 0;
   if (topics.length) {
     // Coverage section
     md += `## ${sectionCoverage}\n\n`;
@@ -122,7 +139,7 @@ export function renderDigestMarkdown(items, { cfg, date, fetchedAt }) {
     // Highlights (cheap extractive bullets)
     md += `## ${sectionHighlights}\n\n`;
     for (const [name, groupedAll] of groupedByTopic.entries()) {
-      const top = groupedAll.slice(0, 2);
+      const top = capPerSource(groupedAll, { maxPerSource: maxPerSourcePerTopic }).slice(0, 2);
       if (!top.length) continue;
       md += `- ${topicLabel(cfg, name)}\n`;
       for (const it of top) {
@@ -138,7 +155,10 @@ export function renderDigestMarkdown(items, { cfg, date, fetchedAt }) {
     for (const t of topics) {
       const name = t.name;
       if (!name) continue;
-      const grouped = items.filter((x) => (x.tags || []).includes(name)).slice(0, perTopic);
+      const grouped = capPerSource(
+        items.filter((x) => (x.tags || []).includes(name)),
+        { maxPerSource: maxPerSourcePerTopic }
+      ).slice(0, perTopic);
       if (!grouped.length) continue;
       md += `### ${topicLabel(cfg, name)}\n\n`;
       md += grouped.map((it) => fmtItem(it, cfg)).join('\n') + '\n\n';
