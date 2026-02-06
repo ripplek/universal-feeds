@@ -21,3 +21,17 @@ sources:
     region: us
     tags: [ai, anthropic, model-releases]
     notes: Public landing page (HTML). Used as a best-effort source when no RSS is available.
+
+  - name: Anthropic Claude Sonnet (landing)
+    url: https://www.anthropic.com/claude/sonnet
+    type: html
+    region: us
+    tags: [ai, anthropic, model-releases]
+    notes: Public landing page (HTML).
+
+  - name: Anthropic Claude Haiku (landing)
+    url: https://www.anthropic.com/claude/haiku
+    type: html
+    region: us
+    tags: [ai, anthropic, model-releases]
+    notes: Public landing page (HTML).

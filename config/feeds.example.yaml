@@ -66,6 +66,7 @@ topics:
     match: any
     # Restrict to trusted sources (pack/name) to reduce false positives.
     source_pack_allow: ["sources/us-ai-labs.yaml"]
+    source_name_allow: ["OpenAI News", "Google DeepMind Blog", "Anthropic Claude Opus (landing)"]
     # Additionally allow from these domains (when source pack doesn't specify or for X links).
     allow_domains:
       - openai.com
