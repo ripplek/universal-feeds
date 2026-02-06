@@ -14,3 +14,10 @@ sources:
     region: global
     tags: [ai, deepmind, research]
     notes: Official DeepMind blog RSS
+
+  - name: Anthropic Claude Opus (landing)
+    url: https://www.anthropic.com/claude/opus
+    type: html
+    region: us
+    tags: [ai, anthropic, model-releases]
+    notes: Public landing page (HTML). Used as a best-effort source when no RSS is available.

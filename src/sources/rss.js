@@ -78,52 +78,91 @@ export async function fetchRssFromPacks({ packs = [], fetchedAt, maxPerSource = 
     const sources = Array.isArray(cfg?.sources) ? cfg.sources : [];
 
     for (const s of sources) {
-      if (s.type !== 'rss') continue;
       const url = s.url;
       if (!url) continue;
 
-      let xml;
-      try {
-        xml = await fetchText(url);
-      } catch {
-        continue;
-      }
-
-      const blocks = extractAllItems(xml).slice(0, maxPerSource);
-      for (const { kind, block } of blocks) {
-        const titleRaw = extractTag(block, 'title');
-        const title = stripHtml(titleRaw || '');
-
-        let link = null;
-        if (kind === 'rss') {
-          link = stripHtml(extractTag(block, 'link') || '');
-        } else {
-          // atom: <link href="..."/>
-          const m = /<link[^>]+href=["']([^"']+)["'][^>]*\/>/i.exec(block);
-          link = m ? m[1] : stripHtml(extractTag(block, 'link') || '');
+      if (s.type === 'rss') {
+        let xml;
+        try {
+          xml = await fetchText(url);
+        } catch {
+          continue;
         }
-        if (!link) continue;
-        link = canonicalizeUrl(link);
 
-        const guid = stripHtml(extractTag(block, 'guid') || '') || link;
-        const pub = stripHtml(extractTag(block, 'pubDate') || '') || stripHtml(extractTag(block, 'updated') || '') || stripHtml(extractTag(block, 'published') || '');
-        const publishedAt = (() => {
-          const d = new Date(pub);
-          return isNaN(d) ? undefined : d.toISOString();
+        const blocks = extractAllItems(xml).slice(0, maxPerSource);
+        for (const { kind, block } of blocks) {
+          const titleRaw = extractTag(block, 'title');
+          const title = stripHtml(titleRaw || '');
+
+          let link = null;
+          if (kind === 'rss') {
+            link = stripHtml(extractTag(block, 'link') || '');
+          } else {
+            // atom: <link href="..."/>
+            const m = /<link[^>]+href=["']([^"']+)["'][^>]*\/>/i.exec(block);
+            link = m ? m[1] : stripHtml(extractTag(block, 'link') || '');
+          }
+          if (!link) continue;
+          link = canonicalizeUrl(link);
+
+          const guid = stripHtml(extractTag(block, 'guid') || '') || link;
+          const pub = stripHtml(extractTag(block, 'pubDate') || '') || stripHtml(extractTag(block, 'updated') || '') || stripHtml(extractTag(block, 'published') || '');
+          const publishedAt = (() => {
+            const d = new Date(pub);
+            return isNaN(d) ? undefined : d.toISOString();
+          })();
+
+          const descRaw = extractTag(block, 'description') || extractTag(block, 'summary') || '';
+          const text = stripHtml(descRaw).slice(0, 400);
+
+          items.push({
+            platform: 'rss',
+            sourceType: 'trending',
+            source: { pack: packPath, name: s.name },
+            id: String(guid),
+            url: link,
+            title: title || undefined,
+            text: text || undefined,
+            publishedAt,
+            fetchedAt,
+            tags: s.tags || undefined
+          });
+        }
+      } else if (s.type === 'html') {
+        // Best-effort HTML source: treat each configured URL as one item.
+        // Useful for vendors that don't publish RSS.
+        let html;
+        try {
+          html = await fetchText(url);
+        } catch {
+          continue;
+        }
+
+        const title = (() => {
+          const og = /<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["'][^>]*>/i.exec(html);
+          if (og?.[1]) return stripHtml(og[1]);
+          const t = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(html);
+          return t?.[1] ? stripHtml(t[1]) : undefined;
         })();
 
-        const descRaw = extractTag(block, 'description') || extractTag(block, 'summary') || '';
-        const text = stripHtml(descRaw).slice(0, 400);
+        const desc = (() => {
+          const og = /<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["'][^>]*>/i.exec(html);
+          if (og?.[1]) return stripHtml(og[1]);
+          const m = /<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["'][^>]*>/i.exec(html);
+          return m?.[1] ? stripHtml(m[1]) : undefined;
+        })();
 
         items.push({
           platform: 'rss',
           sourceType: 'trending',
           source: { pack: packPath, name: s.name },
-          id: String(guid),
-          url: link,
-          title: title || undefined,
-          text: text || undefined,
-          publishedAt,
+          id: String(url),
+          url: canonicalizeUrl(url),
+          title,
+          text: desc,
+          // HTML pages often don't expose a reliable publish date.
+          // Use fetchedAt as a recency signal so they can surface in daily digests.
+          publishedAt: fetchedAt,
           fetchedAt,
           tags: s.tags || undefined
         });

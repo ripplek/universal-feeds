@@ -68,6 +68,7 @@ topics:
     allow_domains:
       - openai.com
       - anthropic.com
+      - www.anthropic.com
       - deepmind.google
       - blog.google
       - ai.googleblog.com
