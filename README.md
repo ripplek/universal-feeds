@@ -95,7 +95,7 @@ Excerpt from `out/digest-YYYY-MM-DD.md`:
   https://...
 ```
 
-See `docs/EXAMPLES.md` for more.
+See `docs/EXAMPLES.md` for copy/paste recipes and `docs/SHOWCASE.md` for a contributor-oriented overview.
 
 ## Quick links
 
