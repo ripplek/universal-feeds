@@ -106,6 +106,7 @@ See `docs/EXAMPLES.md` for copy/paste recipes and `docs/SHOWCASE.md` for a contr
 - Preferences spec: `docs/PREFERENCES.md`
 - Source seed list: `docs/SOURCES.md`
 - RSSHub notes: `docs/RSSHUB.md`
+- Recommendations: `docs/RECOMMENDED.md`
 
 ## Contributing
 
