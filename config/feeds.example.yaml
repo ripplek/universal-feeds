@@ -64,9 +64,23 @@ topics:
 
   - name: ai-model-releases
     match: all
+    # Restrict to trusted domains to reduce false positives.
+    allow_domains:
+      - openai.com
+      - anthropic.com
+      - deepmind.google
+      - blog.google
+      - ai.googleblog.com
+      - x.com
+      - github.com
+      - huggingface.co
+      - techcrunch.com
+      - theverge.com
+      - wired.com
     # Avoid generic words like "released" (too many false positives). Use anchors + specific terms.
     anchors: ["gpt", "claude", "gemini", "deepseek", "qwen", "llm", "model", "weights"]
     keywords: ["SWE-bench", "OSWorld", "TerminalBench", "context window", "1m context", "now available", "API", "preview", "beta", "release notes", "benchmark"]
+    exclude_keywords: ["airdrop", "pump", "memecoin", "token", "ca:", "contract"]
     boost: 1.3
 
 entities: []
