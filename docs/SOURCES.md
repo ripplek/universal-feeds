@@ -107,5 +107,7 @@ Each pack should include:
 - url
 - type: rss|html|api
 - region: us|cn|global
+- optional: weight (ranking)
+- optional: reliability (0..1)
 - topic tags
 - notes: paywall / parsing / reliability

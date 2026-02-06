@@ -29,6 +29,7 @@ sources:
     type: html
     url: https://mp.weixin.qq.com/mp/appmsgalbum?__biz=Mzg3MTkxMjYzOA==&action=getalbum&album_id=4117556836834656257&scene=126#wechat_redirect
     region: cn
+    weight: 0.85
     tags: [wechat, cn, ai, research]
     notes: Uses WeChat MP album link. Prefer this over name-based Sogou matching.
 

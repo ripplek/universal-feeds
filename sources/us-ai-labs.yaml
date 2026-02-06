@@ -21,6 +21,7 @@ sources:
     url: https://www.anthropic.com/claude/opus
     type: html
     region: us
+    weight: 1.15
     tags: [ai, anthropic, model-releases]
     notes: Public landing page (HTML). Used as a best-effort source when no RSS is available.
 
@@ -28,6 +29,7 @@ sources:
     url: https://www.anthropic.com/claude/sonnet
     type: html
     region: us
+    weight: 1.10
     tags: [ai, anthropic, model-releases]
     notes: Public landing page (HTML).
 
@@ -35,5 +37,6 @@ sources:
     url: https://www.anthropic.com/claude/haiku
     type: html
     region: us
+    weight: 1.05
     tags: [ai, anthropic, model-releases]
     notes: Public landing page (HTML).

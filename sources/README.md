@@ -22,6 +22,8 @@ sources:
     url: https://example.com/feed.xml
     type: rss|html|api
     region: us|cn|global
+    weight: 1.0         # optional ranking weight (default 1.0)
+    reliability: 1.0    # optional 0..1 (future; default 1.0)
     tags: [tag1, tag2]
     notes: free text
 ```
