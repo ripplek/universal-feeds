@@ -32,12 +32,14 @@ function fmtItem(item, cfg) {
 
 function topicLabel(cfg, name) {
   const mapEn = {
+    'wechat-following': 'WeChat (following)',
     openclaw: 'OpenClaw / Clawdbot',
     'ai-model-releases-official': 'AI model releases (official)',
     'ai-model-releases-community': 'AI model releases (community)',
     'agentic-ai': 'Agentic AI / workflows'
   };
   const mapZh = {
+    'wechat-following': '微信公众号（关注）',
     openclaw: 'OpenClaw / Clawdbot 动态',
     'ai-model-releases-official': 'AI 模型发布/更新（官方）',
     'ai-model-releases-community': 'AI 模型发布/更新（社区）',

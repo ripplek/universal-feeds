@@ -21,7 +21,7 @@ ranking:
 
 platforms:
   x:
-    enabled: true
+    enabled: false
     sources: [following]
     following:
       mode: following    # following | for_you
@@ -48,6 +48,12 @@ platforms:
 # Default topics: keep MVP digest focused on agentic AI + OpenClaw.
 # Users can edit/replace this list.
 topics:
+  - name: wechat-following
+    match: any
+    source_pack_allow: ["sources/cn-wechat-hot.yaml"]
+    # Only surface WeChat items from our explicit list
+    boost: 1.05
+
   - name: openclaw
     match: any
     keywords: ["OpenClaw", "Clawdbot", "Moltbot", "clawd bot", "clawd", "moltbook"]

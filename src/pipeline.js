@@ -34,6 +34,28 @@ export async function runDigest({ cfg, date, outDir }) {
     items.push(...rssItems);
   }
 
+  // WeChat MP album (best-effort)
+  try {
+    const wechatPackPath = 'sources/cn-wechat-hot.yaml';
+    const wechatPack = (await import('yaml')).default.parse(fs.readFileSync(wechatPackPath, 'utf8'));
+    const wechatSources = Array.isArray(wechatPack?.sources) ? wechatPack.sources : [];
+    const albumSources = wechatSources.filter((s) => s.type === 'html' && String(s.url || '').includes('mp/appmsgalbum'));
+    if (albumSources.length) {
+      const { fetchWeChatMpAlbum } = await import('./sources/wechat_mp.js');
+      for (const s of albumSources) {
+        const ws = await fetchWeChatMpAlbum({ name: s.name, url: s.url, fetchedAt, limit: 30 });
+        // inherit tags
+        for (const it of ws) {
+          it.tags = Array.isArray(s.tags) ? s.tags : it.tags;
+          it.source = { pack: wechatPackPath, name: s.name };
+        }
+        items.push(...ws);
+      }
+    }
+  } catch {
+    // best-effort
+  }
+
   // V2EX hot
   if (cfg?.platforms?.v2ex?.enabled && (cfg?.platforms?.v2ex?.sources || []).includes('trending')) {
     try {

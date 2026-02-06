@@ -25,12 +25,12 @@ sources:
     tags: [wechat, cn, finance, news]
     notes: Account name query via Sogou
 
-  - name: 机器之心 (WeChat, via Sogou)
-    type: rss
-    rsshub_route: wechat/sogou/机器之心
+  - name: 机器之心（公众号合集，__biz+album）
+    type: html
+    url: https://mp.weixin.qq.com/mp/appmsgalbum?__biz=Mzg3MTkxMjYzOA==&action=getalbum&album_id=4117556836834656257&scene=126#wechat_redirect
     region: cn
     tags: [wechat, cn, ai, research]
-    notes: Account name query via Sogou
+    notes: Uses WeChat MP album link. Prefer this over name-based Sogou matching.
 
   - name: AI寒武纪 (WeChat, via Sogou)
     type: rss
