@@ -69,7 +69,7 @@ function capPerSource(items, { maxPerSource = 0 } = {}) {
   return out;
 }
 
-export function renderDigestMarkdown(items, { cfg, date, fetchedAt }) {
+export function renderDigestMarkdown(items, { cfg, date, fetchedAt, recommended = [] }) {
   const title = h(cfg, `Daily Digest — ${date}`, `每日简报 — ${date}`);
   const subtitle = h(cfg, `Fetched at: ${fetchedAt}`, `抓取时间：${fetchedAt}`);
 
@@ -180,6 +180,13 @@ export function renderDigestMarkdown(items, { cfg, date, fetchedAt }) {
       '_Note: Only items matching configured topics are included. See **By Topic** above._\n',
       '_说明：仅包含命中已配置主题的条目，详见上方 **按主题**。_\n'
     );
+
+    const recEnabled = cfg?.recommended?.enabled !== false;
+    if (recEnabled && Array.isArray(recommended) && recommended.length) {
+      md += `\n\n## ${h(cfg, 'Recommended (24h, profile-based)', '推荐（24h，基于画像）')}\n\n`;
+      md += recommended.map((it) => fmtItem(it, cfg)).join('\n') + '\n';
+    }
+
     return md;
   }
 

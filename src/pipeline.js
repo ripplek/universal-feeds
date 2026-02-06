@@ -9,6 +9,7 @@ import { filterXNoise } from './filters.js';
 import { unfurlUrl } from './unfurl.js';
 import { rankItems } from './rank.js';
 import { tagAndScore } from './tagging.js';
+import { pickRecommended } from './recommend.js';
 import { trimByPlatform } from './trim.js';
 import { renderDigestMarkdown } from './render.js';
 
@@ -155,9 +156,21 @@ export async function runDigest({ cfg, date, outDir }) {
     }
   }
 
-  // Rank (base) + topic tagging/boost
+  // Rank (base)
   items = rankItems(items, cfg);
+
+  // Tagging & topic boosts
+  // We need two views:
+  // - allTagged: for recommendation (topic match NOT required)
+  // - items: the main output, which may require topic match
+  const cfgAll = {
+    ...cfg,
+    output: { ...(cfg.output || {}), require_topic_match: false }
+  };
+  const allTagged = tagAndScore(items, cfgAll);
   items = tagAndScore(items, cfg);
+
+  const recommended = pickRecommended(allTagged, cfg);
 
   // Retweet penalty (after topic boosts)
   const xCfg = cfg?.platforms?.x?.following || {};
@@ -196,7 +209,7 @@ export async function runDigest({ cfg, date, outDir }) {
 
   // Render digest
   const digestPath = path.join(outDir, `digest-${date}.md`);
-  const md = renderDigestMarkdown(items, { cfg, date, fetchedAt });
+  const md = renderDigestMarkdown(items, { cfg, date, fetchedAt, recommended });
   fs.writeFileSync(digestPath, md, 'utf8');
 
   return { itemsPath, digestPath, count: items.length };

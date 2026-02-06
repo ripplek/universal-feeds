@@ -6,6 +6,17 @@ output:
   require_topic_match: true    # if true, only keep items matching any topic
   max_per_topic: 8             # limit items shown under each topic section
 
+# Additive section: what's hot in the last 24h, chosen using your existing topics/entities as a profile.
+recommended:
+  enabled: true
+  # Prefer tech/AI signal; avoid using X as "world news" by default.
+  use_platforms: [rss, v2ex, youtube]
+  max_items: 10
+  max_per_source: 2
+  max_per_domain: 3
+  # Minimum score after hotness * (1 + interest)
+  min_score: 0.6
+
 ranking:
   # Prevent a single source (e.g. a WeChat album) from flooding a topic section.
   # 0 = disabled
