@@ -1,23 +1,25 @@
 import { spawn } from 'node:child_process';
 
-function execBird(args) {
-  return new Promise((resolve, reject) => {
-    const p = spawn('bird', args, { stdio: ['ignore', 'pipe', 'pipe'] });
-    const out = [];
-    const err = [];
-    p.stdout.on('data', (d) => out.push(d));
-    p.stderr.on('data', (d) => err.push(d));
-    p.on('error', (e) => reject(new Error(`bird spawn failed: ${e.message}`)));
-    p.on('close', (code) => {
-      const stdout = Buffer.concat(out).toString('utf8');
-      const stderr = Buffer.concat(err).toString('utf8');
-      if (code !== 0) {
-        reject(new Error(`bird failed (code ${code})\n${stderr}`));
-        return;
-      }
-      resolve({ stdout, stderr });
+export function makeExecBird({ spawnImpl = spawn } = {}) {
+  return function execBird(args) {
+    return new Promise((resolve, reject) => {
+      const p = spawnImpl('bird', args, { stdio: ['ignore', 'pipe', 'pipe'] });
+      const out = [];
+      const err = [];
+      p.stdout.on('data', (d) => out.push(d));
+      p.stderr.on('data', (d) => err.push(d));
+      p.on('error', (e) => reject(new Error(`bird spawn failed: ${e.message}`)));
+      p.on('close', (code) => {
+        const stdout = Buffer.concat(out).toString('utf8');
+        const stderr = Buffer.concat(err).toString('utf8');
+        if (code !== 0) {
+          reject(new Error(`bird failed (code ${code})\n${stderr}`));
+          return;
+        }
+        resolve({ stdout, stderr });
+      });
     });
-  });
+  };
 }
 
 function toIso(createdAt) {
@@ -59,7 +61,7 @@ function normalizeTweet(t, fetchedAt) {
   };
 }
 
-export async function fetchXFollowing({ limit = 200, mode = 'following', fetchedAt, timeoutMs = 60000 }) {
+export async function fetchXFollowing({ limit = 200, mode = 'following', fetchedAt, timeoutMs = 60000, execBird = makeExecBird() }) {
   const args = ['home'];
   if (mode === 'following') args.push('--following');
   args.push('-n', String(limit), '--json-full', '--plain', '--quote-depth', '0');

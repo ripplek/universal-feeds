@@ -2,14 +2,29 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { fetchXFollowing } from '../src/sources/x_bird.js';
 
-// Unit test strategy:
-// - We don't hit the network.
-// - We assert that passing timeoutMs doesn't throw when bird isn't invoked.
-// Since fetchXFollowing spawns `bird`, we can't run it in unit tests without mocking.
-// So this test only checks the function signature is present by verifying it is a function.
+test('fetchXFollowing passes --timeout to bird when timeoutMs is set', async () => {
+  const seen = [];
+  const execBird = async (args) => {
+    seen.push(args);
+    return { stdout: '[]', stderr: '' };
+  };
 
-test('fetchXFollowing exports and accepts timeoutMs option (smoke)', () => {
-  assert.equal(typeof fetchXFollowing, 'function');
-  // Signature check (best-effort): function length should be 1 (destructured object).
-  assert.equal(fetchXFollowing.length, 1);
+  await fetchXFollowing({ limit: 5, mode: 'following', fetchedAt: 'x', timeoutMs: 60000, execBird });
+  assert.equal(seen.length, 1);
+  const args = seen[0];
+  const i = args.indexOf('--timeout');
+  assert.ok(i >= 0);
+  assert.equal(args[i + 1], '60000');
+});
+
+test('fetchXFollowing does not pass --timeout when timeoutMs is 0', async () => {
+  const seen = [];
+  const execBird = async (args) => {
+    seen.push(args);
+    return { stdout: '[]', stderr: '' };
+  };
+
+  await fetchXFollowing({ limit: 5, mode: 'following', fetchedAt: 'x', timeoutMs: 0, execBird });
+  const args = seen[0];
+  assert.equal(args.includes('--timeout'), false);
 });
