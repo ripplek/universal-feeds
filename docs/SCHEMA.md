@@ -25,6 +25,8 @@ type FeedItem = {
   source?: {
     pack?: string; // e.g. sources/us-tech.yaml
     name?: string; // human label, e.g. "TechCrunch"
+    weight?: number; // optional ranking weight
+    reliability?: number; // optional 0..1 (future)
   };
 
   // Identity

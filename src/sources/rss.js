@@ -148,7 +148,7 @@ export async function fetchRssFromPacks({ packs = [], fetchedAt, maxPerSource = 
           items.push({
             platform: 'rss',
             sourceType: 'trending',
-            source: { pack: packPath, name: s.name },
+            source: { pack: packPath, name: s.name, weight: s.weight, reliability: s.reliability },
             id: String(guid),
             url: link,
             title: title || undefined,
@@ -185,19 +185,40 @@ export async function fetchRssFromPacks({ packs = [], fetchedAt, maxPerSource = 
         const canonical = canonicalizeUrl(url);
         const fingerprint = sha1([title || '', desc || ''].join('\n'));
         const prev = state.html?.[canonical];
-        const changed = !prev || prev.fingerprint !== fingerprint;
-        if (changed) {
+
+        // Configurable change sensitivity
+        const minChangeLen = globalThis.__UF_CFG?.html_sources?.min_change_length ?? 0;
+        const forceDays = globalThis.__UF_CFG?.html_sources?.force_refresh_days ?? 0;
+
+        const isSmallChange = prev && prev.fingerprint !== fingerprint
+          ? Math.abs(((prev.desc || '').length - (desc || '').length)) < minChangeLen
+          : false;
+
+        let changed = !prev || prev.fingerprint !== fingerprint;
+        if (changed && isSmallChange) changed = false;
+
+        // Force refresh if unchanged for too long
+        let forceRefresh = false;
+        if (!changed && prev && forceDays > 0) {
+          const last = Date.parse(prev.lastSeenAt || '');
+          if (Number.isFinite(last)) {
+            const ageDays = (Date.now() - last) / 86400000;
+            if (ageDays >= forceDays) forceRefresh = true;
+          }
+        }
+
+        if (changed || forceRefresh) {
           state.html = state.html || {};
           state.html[canonical] = { fingerprint, lastSeenAt: fetchedAt, title, desc };
         }
 
-        // If unchanged, treat it as old content (do not surface daily unless user wants).
-        const publishedAt = changed ? fetchedAt : prev?.lastSeenAt;
+        // Recency signal
+        const publishedAt = (changed || forceRefresh) ? fetchedAt : prev?.lastSeenAt;
 
         items.push({
           platform: 'rss',
           sourceType: 'trending',
-          source: { pack: packPath, name: s.name },
+          source: { pack: packPath, name: s.name, weight: s.weight, reliability: s.reliability },
           id: String(url),
           url: canonical,
           title,

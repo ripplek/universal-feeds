@@ -5,6 +5,7 @@ sources:
     url: https://openai.com/news/rss.xml
     type: rss
     region: us
+    weight: 1.2
     tags: [ai, openai, model-releases]
     notes: Official OpenAI news feed (includes product/model announcements)
 
@@ -12,6 +13,7 @@ sources:
     url: https://deepmind.google/blog/rss.xml
     type: rss
     region: global
+    weight: 1.15
     tags: [ai, deepmind, research]
     notes: Official DeepMind blog RSS
 

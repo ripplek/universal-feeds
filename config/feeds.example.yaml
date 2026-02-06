@@ -102,6 +102,10 @@ entities:
 rsshub:
   base_url: https://rsshub.app
 
+html_sources:
+  min_change_length: 30   # ignore tiny description tweaks
+  force_refresh_days: 7   # surface an unchanged HTML seed at least once every N days
+
 sources:
   allow_domains: []
   block_domains: []
