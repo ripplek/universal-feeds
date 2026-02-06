@@ -24,22 +24,33 @@ try {
 
 const base = (cfg?.rsshub?.base_url || 'https://rsshub.app').replace(/\/+$/, '');
 const inputUrl = process.argv.find((a) => a.startsWith('http'));
+const keyword = !inputUrl ? process.argv.slice(2).filter((a) => !a.startsWith('--') && !a.includes('config') && !a.includes('.yaml'))[0] : null;
 
 console.log(`RSSHub base: ${base}`);
 console.log(`Docs: https://docs.rsshub.app/`);
 console.log(`Radar rules API (may be blocked): ${base}/api/radar/rules`);
 
-if (!inputUrl) {
-  console.log('\nUsage: scripts/rsshub_suggest.mjs --config config/feeds.yaml <url>');
+if (!inputUrl && !keyword) {
+  console.log('\nUsage:');
+  console.log('  scripts/rsshub_suggest.mjs --config config/feeds.yaml <url>');
+  console.log('  scripts/rsshub_suggest.mjs --config config/feeds.yaml <keyword>');
   process.exit(0);
 }
 
-const u = new URL(inputUrl);
-const host = u.hostname;
-const baseDomain = host.split('.').slice(-2).join('.');
+if (keyword) {
+  console.log(`\nKeyword: ${keyword}`);
+}
 
-console.log(`\nInput URL: ${inputUrl}`);
-console.log(`Host: ${host} (base: ${baseDomain})`);
+let host = null;
+let baseDomain = null;
+if (inputUrl) {
+  const u = new URL(inputUrl);
+  host = u.hostname;
+  baseDomain = host.split('.').slice(-2).join('.');
+
+  console.log(`\nInput URL: ${inputUrl}`);
+  console.log(`Host: ${host} (base: ${baseDomain})`);
+}
 
 const CACHE_DIR = path.resolve('out', 'cache');
 const CACHE_PATH = path.join(CACHE_DIR, 'rsshub-radar-rules.ts');
@@ -130,23 +141,42 @@ try {
   process.exit(0);
 }
 
-let block = sliceDomainBlock(rulesText, host);
-if (!block && baseDomain !== host) block = sliceDomainBlock(rulesText, baseDomain);
+if (inputUrl) {
+  let block = sliceDomainBlock(rulesText, host);
+  if (!block && baseDomain && baseDomain !== host) block = sliceDomainBlock(rulesText, baseDomain);
 
-if (!block) {
-  console.log(`\nNo Radar rules block found for ${host}.`);
-  console.log('Try manual route search: https://docs.rsshub.app/routes/');
-  process.exit(0);
+  if (!block) {
+    console.log(`\nNo Radar rules block found for ${host}.`);
+    console.log('Try manual route search: https://docs.rsshub.app/routes/');
+    process.exit(0);
+  }
+
+  const cands = extractCandidates(block);
+  console.log(`\nCandidates from RSSHub-Radar rules (${cands.length}):`);
+  for (const c of cands.slice(0, 10)) {
+    console.log(`\n- ${c.title}`);
+    console.log(`  docs: ${c.docs}`);
+    if (c.route) console.log(`  route: ${c.route}`);
+  }
+
+  console.log(`\nTo use in sources/*.yaml:`);
+  console.log(`  rsshub_route: <route>`);
+  console.log(`  # feed URL => ${base}/<route>`);
+} else if (keyword) {
+  // Keyword search: show docs links that mention the keyword.
+  const kw = keyword.toLowerCase();
+  const hits = [];
+  const docsRe = /docs:\s*\"([^\"]+)\"/g;
+  let m;
+  while ((m = docsRe.exec(rulesText))) {
+    const docs = m[1];
+    const window = rulesText.slice(Math.max(0, m.index - 200), m.index + 200).toLowerCase();
+    if (window.includes(kw)) hits.push(docs);
+    if (hits.length >= 30) break;
+  }
+  const uniq = [...new Set(hits)];
+  console.log(`\nDocs hits (${uniq.length}):`);
+  for (const d of uniq.slice(0, 15)) console.log(`- ${d}`);
+  if (!uniq.length) console.log('  (no matches)');
+  console.log('\nTip: open a docs link above and copy a route into sources as rsshub_route.');
 }
-
-const cands = extractCandidates(block);
-console.log(`\nCandidates from RSSHub-Radar rules (${cands.length}):`);
-for (const c of cands.slice(0, 10)) {
-  console.log(`\n- ${c.title}`);
-  console.log(`  docs: ${c.docs}`);
-  if (c.route) console.log(`  route: ${c.route}`);
-}
-
-console.log(`\nTo use in sources/*.yaml:`);
-console.log(`  rsshub_route: <route>`);
-console.log(`  # feed URL => ${base}/<route>`);

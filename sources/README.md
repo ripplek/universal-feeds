@@ -9,6 +9,7 @@ YAML packs that can be loaded by adapters/pipelines.
 - `us-ai-labs.yaml`
 - `cn-tech.yaml`
 - `cn-general.yaml`
+- `cn-wechat-hot.yaml`
 - `youtube-ai-channels.yaml`
 
 ## Schema

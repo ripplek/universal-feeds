@@ -1,0 +1,57 @@
+# WeChat Official Accounts / 热榜 (via RSSHub routes)
+#
+# Note:
+# - WeChat does not provide a stable official RSS for trending.
+# - RSSHub supports multiple 3rd-party providers for WeChat feeds.
+# - Fill in IDs/queries as needed.
+#
+# How to find routes quickly:
+#   node scripts/rsshub_suggest.mjs --config config/feeds.yaml "公众号"
+#
+# Docs entry points (from RSSHub):
+# - https://docs.rsshub.app/routes/new-media#wei-xin
+# - https://docs.rsshub.app/routes/new-media#zi-you-wei-xin
+#
+
+sources:
+  # 1) FreeWeChat profile (public mirror)
+  # Route example (replace <id>):
+  #   /freewechat/profile/<id>
+  - name: WeChat (FreeWeChat) — profile (TODO)
+    type: rss
+    rsshub_route: freewechat/profile/<id>
+    region: cn
+    tags: [wechat, hot, cn]
+    notes: Fill <id> (FreeWeChat profile id)
+
+  # 2) Sogou WeChat search (keyword based)
+  # Route example:
+  #   /wechat/sogou/<query>
+  - name: WeChat (Sogou) — keyword hot (TODO)
+    type: rss
+    rsshub_route: wechat/sogou/<query>
+    region: cn
+    tags: [wechat, hot, cn]
+    notes: Replace <query> with keyword (e.g. AI, OpenClaw)
+
+  # 3) Other providers supported by RSSHub (placeholders)
+  - name: WeChat — provider ce (TODO)
+    type: rss
+    rsshub_route: wechat/ce/<id>
+    region: cn
+    tags: [wechat, cn]
+    notes: Provider-based feed; fill <id>
+
+  - name: WeChat — provider data258 (TODO)
+    type: rss
+    rsshub_route: wechat/data258/<id>
+    region: cn
+    tags: [wechat, cn]
+    notes: Provider-based feed; fill <id>
+
+  - name: WeChat — provider wechat2rss (TODO)
+    type: rss
+    rsshub_route: wechat/wechat2rss/<id>
+    region: cn
+    tags: [wechat, cn]
+    notes: Provider-based feed; fill <id>
