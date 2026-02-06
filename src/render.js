@@ -36,14 +36,16 @@ function topicLabel(cfg, name) {
     openclaw: 'OpenClaw / Clawdbot',
     'ai-model-releases-official': 'AI model releases (official)',
     'ai-model-releases-community': 'AI model releases (community)',
-    'agentic-ai': 'Agentic AI / workflows'
+    'agentic-ai': 'Agentic AI / workflows',
+    'entities-news': 'Entities / companies'
   };
   const mapZh = {
     'wechat-following': '微信公众号（关注）',
     openclaw: 'OpenClaw / Clawdbot 动态',
     'ai-model-releases-official': 'AI 模型发布/更新（官方）',
     'ai-model-releases-community': 'AI 模型发布/更新（社区）',
-    'agentic-ai': 'Agentic AI / 工作流'
+    'agentic-ai': 'Agentic AI / 工作流',
+    'entities-news': '实体 / 公司'
   };
   const m = cfg?.output?.language === 'zh' ? mapZh : mapEn;
   return m[name] || name;
@@ -55,6 +57,7 @@ export function renderDigestMarkdown(items, { cfg, date, fetchedAt }) {
 
   const sectionTopics = h(cfg, 'By Topic', '按主题');
   const sectionCoverage = h(cfg, 'Topic coverage', '主题覆盖');
+  const sectionEntityCoverage = h(cfg, 'Entities coverage', '实体覆盖');
   const sectionHighlights = h(cfg, 'Topic highlights', '主题要点');
   const requireTopic = cfg?.output?.require_topic_match === true;
   const sectionAll = requireTopic
@@ -88,6 +91,33 @@ export function renderDigestMarkdown(items, { cfg, date, fetchedAt }) {
       md += `- ${topicLabel(cfg, name)}: ${groupedAll.length} (${parts})\n`;
     }
     md += `\n`;
+
+    // Entities coverage
+    const entities = Array.isArray(cfg?.entities) ? cfg.entities : [];
+    if (entities.length) {
+      const lines = [];
+      for (const e of entities) {
+        const en = e?.name;
+        if (!en) continue;
+        const tag = `entity:${en}`;
+        const hits = items.filter((x) => (x.tags || []).includes(tag));
+        if (!hits.length) continue;
+        const byPlatform = hits.reduce((acc, it) => {
+          acc[it.platform] = (acc[it.platform] || 0) + 1;
+          return acc;
+        }, {});
+        const parts = Object.entries(byPlatform)
+          .sort((a, b) => b[1] - a[1])
+          .map(([p, n]) => `${p}:${n}`)
+          .join(', ');
+        lines.push(`- ${en}: ${hits.length} (${parts})`);
+      }
+
+      if (lines.length) {
+        md += `## ${sectionEntityCoverage}\n\n`;
+        md += lines.join('\n') + '\n\n';
+      }
+    }
 
     // Highlights (cheap extractive bullets)
     md += `## ${sectionHighlights}\n\n`;

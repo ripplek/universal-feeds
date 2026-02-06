@@ -93,13 +93,11 @@ topics:
     exclude_keywords: ["airdrop", "pump", "memecoin", "token", "ca:", "contract", "whitelist", "presale", "launchpad"]
     boost: 1.05
 
-entities: []
-
-# Optional: entity matching (for future: stocks/companies). Example:
-# entities:
-#   - name: NVIDIA
-#     aliases: ["NVIDIA", "英伟达", "NVDA"]
-#     boost: 1.1
+entities:
+  # Example entity list (edit freely)
+  - name: NVIDIA
+    aliases: ["nvidia", "nvda", "英伟达"]
+    boost: 1.15
 
 rsshub:
   base_url: https://rsshub.app

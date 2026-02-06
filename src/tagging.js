@@ -53,6 +53,9 @@ export function tagAndScore(items, cfg) {
     };
   });
 
+  // If entities exist, we create a synthetic topic name to group them.
+  const ENT_TOPIC = 'entities-news';
+
   const requireTopicMatch = cfg?.output?.require_topic_match === true;
 
   const out = [];
@@ -101,14 +104,21 @@ export function tagAndScore(items, cfg) {
     }
 
     // Entity matches (tag as entity:<name>)
+    let entityHit = false;
     for (const e of compiledEntities) {
       if (!e.name || !e.aliases.length) continue;
       const hit = e.aliases.some((a) => a && hay.includes(a));
       if (hit) {
+        entityHit = true;
         const tag = `entity:${e.name}`;
         matched.push(tag);
         topicBoost += (e.boost - 1.0);
       }
+    }
+
+    // Synthetic entity topic
+    if (entityHit) {
+      matched.push(ENT_TOPIC);
     }
 
     if (requireTopicMatch && matched.length === 0) continue;
