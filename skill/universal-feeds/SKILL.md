@@ -11,6 +11,36 @@ This repo ships a digest pipeline that:
 - de-dups + ranks + topic-tags
 - renders a daily Markdown digest
 
+## Install (local)
+
+Clawdbot loads skills in this precedence order:
+
+1) `<workspace>/skills/<name>/SKILL.md` (highest)
+2) `~/.clawdbot/skills/<name>/SKILL.md`
+3) Bundled skills
+4) `skills.load.extraDirs`
+
+Recommended install (workspace):
+
+```bash
+# from your Clawdbot workspace
+mkdir -p ~/clawd/skills
+ln -s "$(pwd)/skill/universal-feeds" ~/clawd/skills/universal-feeds
+```
+
+Alternative (managed overrides):
+
+```bash
+mkdir -p ~/.clawdbot/skills
+ln -s "$(pwd)/skill/universal-feeds" ~/.clawdbot/skills/universal-feeds
+```
+
+There is also an installer script in this repo:
+
+```bash
+bash scripts/install_skill.sh
+```
+
 ## Quick start
 
 Run digest:
