@@ -69,16 +69,10 @@ export async function fetchXFollowing({ limit = 200, mode = 'following', fetched
 
   // bird may print warnings to stdout (e.g. Safari cookie EPERM).
   // Robust strategy: find the first line that *starts* with JSON.
-  const lines = stdout.split(/\r?\n/);
-  let firstJsonLine = 0;
-  for (let i = 0; i < lines.length; i++) {
-    const l = lines[i].trimStart();
-    if (l.startsWith('[') || l.startsWith('{')) {
-      firstJsonLine = i;
-      break;
-    }
-  }
-  const jsonText = lines.slice(firstJsonLine).join('\n').trim();
+  // Use the first non-whitespace '{' or '[' as the JSON start.
+  // This is robust even if tweets contain '[' in their text.
+  const m = /[\[{]/.exec(stdout);
+  const jsonText = m ? stdout.slice(m.index).trim() : stdout.trim();
 
   let arr;
   try {
