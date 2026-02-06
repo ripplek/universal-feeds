@@ -35,6 +35,7 @@ Platforms in scope (phased):
 - Architecture: `docs/ARCHITECTURE.md`
 - Roadmap: `docs/ROADMAP.md`
 - Preferences spec: `docs/PREFERENCES.md`
+- Source seed list: `docs/SOURCES.md`
 
 ## License
 
