@@ -58,6 +58,9 @@ type FeedItem = {
   score?: number;
 
   // Debug
+  debug?: {
+    tagHits?: Record<string, string[]>; // e.g. { openclaw: ["openclaw"] }
+  };
   raw?: unknown; // optional; avoid storing by default
 };
 ```

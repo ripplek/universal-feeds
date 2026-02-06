@@ -2,14 +2,31 @@ function h(cfg, en, zh) {
   return cfg?.output?.language === 'zh' ? zh : en;
 }
 
-function fmtItem(item) {
+function fmtItem(item, cfg) {
   const title = item.title?.trim();
   const text = item.text?.trim();
   const head = title || (text ? text.slice(0, 140) : '(no text)');
   const author = item.author?.handle || item.author?.name;
   const score = typeof item.score === 'number' ? item.score.toFixed(2) : '';
   const tags = (item.tags || []).length ? ` [${(item.tags || []).join(', ')}]` : '';
-  return `- ${head}${author ? ` — ${author}` : ''}${tags} (score ${score})\n  ${item.url}`;
+
+  let hit = '';
+  const hits = item?.debug?.tagHits;
+  if (hits && typeof hits === 'object') {
+    const flat = [];
+    for (const k of Object.keys(hits)) {
+      const arr = hits[k];
+      if (Array.isArray(arr)) for (const w of arr) flat.push(w);
+    }
+    const unique = [...new Set(flat)].slice(0, 3);
+    if (unique.length) {
+      hit = cfg?.output?.language === 'zh'
+        ? `（命中: ${unique.join(' / ')}）`
+        : ` (hits: ${unique.join(' / ')})`;
+    }
+  }
+
+  return `- ${head}${author ? ` — ${author}` : ''}${tags} (score ${score})${hit}\n  ${item.url}`;
 }
 
 function topicLabel(cfg, name) {
@@ -30,6 +47,7 @@ export function renderDigestMarkdown(items, { cfg, date, fetchedAt }) {
   const subtitle = h(cfg, `Fetched at: ${fetchedAt}`, `抓取时间：${fetchedAt}`);
 
   const sectionTopics = h(cfg, 'By Topic', '按主题');
+  const sectionCoverage = h(cfg, 'Topic coverage', '主题覆盖');
   const sectionAll = h(cfg, 'All Items (by platform)', '全部条目（按平台）');
 
   let md = `# ${title}\n\n${subtitle}\n\n`;
@@ -38,6 +56,25 @@ export function renderDigestMarkdown(items, { cfg, date, fetchedAt }) {
   const topics = Array.isArray(cfg?.topics) ? cfg.topics : [];
   const perTopic = cfg?.output?.max_per_topic || 8;
   if (topics.length) {
+    // Coverage section
+    md += `## ${sectionCoverage}\n\n`;
+    for (const t of topics) {
+      const name = t.name;
+      if (!name) continue;
+      const groupedAll = items.filter((x) => (x.tags || []).includes(name));
+      if (!groupedAll.length) continue;
+      const byPlatform = groupedAll.reduce((acc, it) => {
+        acc[it.platform] = (acc[it.platform] || 0) + 1;
+        return acc;
+      }, {});
+      const parts = Object.entries(byPlatform)
+        .sort((a, b) => b[1] - a[1])
+        .map(([p, n]) => `${p}:${n}`)
+        .join(', ');
+      md += `- ${topicLabel(cfg, name)}: ${groupedAll.length} (${parts})\n`;
+    }
+    md += `\n`;
+
     md += `## ${sectionTopics}\n\n`;
     for (const t of topics) {
       const name = t.name;
@@ -45,7 +82,7 @@ export function renderDigestMarkdown(items, { cfg, date, fetchedAt }) {
       const grouped = items.filter((x) => (x.tags || []).includes(name)).slice(0, perTopic);
       if (!grouped.length) continue;
       md += `### ${topicLabel(cfg, name)}\n\n`;
-      md += grouped.map(fmtItem).join('\n') + '\n\n';
+      md += grouped.map((it) => fmtItem(it, cfg)).join('\n') + '\n\n';
     }
   }
 
@@ -66,7 +103,7 @@ export function renderDigestMarkdown(items, { cfg, date, fetchedAt }) {
     const group = items.filter((x) => x.platform === p);
     if (!group.length) continue;
     md += `### ${label}\n\n`;
-    md += group.map(fmtItem).join('\n') + '\n\n';
+    md += group.map((it) => fmtItem(it, cfg)).join('\n') + '\n\n';
   }
 
   // Any other platforms
@@ -74,7 +111,7 @@ export function renderDigestMarkdown(items, { cfg, date, fetchedAt }) {
   const other = items.filter((x) => !known.has(x.platform));
   if (other.length) {
     md += `### ${h(cfg, 'Other', '其他')}\n\n`;
-    md += other.map(fmtItem).join('\n') + '\n\n';
+    md += other.map((it) => fmtItem(it, cfg)).join('\n') + '\n\n';
   }
 
   return md;

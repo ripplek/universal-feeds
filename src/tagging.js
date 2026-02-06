@@ -6,6 +6,15 @@ function uniq(arr) {
   return [...new Set(arr.filter(Boolean))];
 }
 
+function findHits(hay, keywords, match) {
+  if (!keywords.length) return [];
+  if (match === 'all') {
+    const ok = keywords.every((k) => k && hay.includes(k));
+    return ok ? keywords.slice(0, 5) : [];
+  }
+  return keywords.filter((k) => k && hay.includes(k)).slice(0, 5);
+}
+
 export function tagAndScore(items, cfg) {
   const topics = Array.isArray(cfg?.topics) ? cfg.topics : [];
 
@@ -29,17 +38,17 @@ export function tagAndScore(items, cfg) {
     const hay = normalizeText([it.title, it.text, it.author?.name, it.author?.handle].filter(Boolean).join('\n'));
 
     const matched = [];
+    const tagHits = {};
     let topicBoost = 0;
     for (const t of compiled) {
       if (!t.name) continue;
       const anchorOk = !t.anchors.length || t.anchors.some((k) => k && hay.includes(k));
-      let kwOk;
-      if (!t.kws.length) kwOk = true;
-      else if (t.match === 'all') kwOk = t.kws.every((k) => k && hay.includes(k));
-      else kwOk = t.kws.some((k) => k && hay.includes(k));
+      const hits = findHits(hay, t.kws, t.match);
+      const kwOk = !t.kws.length ? true : hits.length > 0;
       const hit = anchorOk && kwOk;
       if (hit) {
         matched.push(t.name);
+        if (hits.length) tagHits[t.name] = hits;
         // additive boost; keep simple for MVP
         topicBoost += (t.boost - 1.0);
       }
@@ -49,7 +58,8 @@ export function tagAndScore(items, cfg) {
 
     const tags = uniq([...(it.tags || []), ...matched]);
     const score = (it.score || 0) + topicBoost;
-    out.push({ ...it, tags, score });
+    const debug = Object.keys(tagHits).length ? { ...(it.debug || {}), tagHits } : it.debug;
+    out.push({ ...it, tags, score, debug });
   }
   return out;
 }
