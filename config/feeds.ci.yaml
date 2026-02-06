@@ -1,0 +1,44 @@
+output:
+  language: en
+  max_items: 30
+  summarize_top_n: 0
+  recency_hours: 24
+  require_topic_match: true
+  max_per_topic: 8
+
+# Disable X in CI (no cookies)
+platforms:
+  x:
+    enabled: false
+    sources: [following]
+    following:
+      mode: following
+      limit: 50
+
+  rss:
+    enabled: true
+    sources: [trending]
+    packs:
+      - sources/us-ai-labs.yaml
+      - sources/us-tech.yaml
+      - sources/us-general.yaml
+
+  v2ex:
+    enabled: true
+    sources: [trending]
+
+  youtube:
+    enabled: true
+    sources: [trending]
+    packs:
+      - sources/youtube-ai-channels.yaml
+
+rsshub:
+  base_url: https://rsshub.app
+
+html_sources:
+  min_change_length: 30
+  force_refresh_days: 7
+
+topics: []
+entities: []

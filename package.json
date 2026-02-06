@@ -8,6 +8,9 @@
     "universal-feeds": "bin/digest"
   },
   "type": "module",
+  "scripts": {
+    "test": "node bin/digest --config config/feeds.ci.yaml --date today"
+  },
   "dependencies": {
     "yaml": "^2.8.1"
   }
