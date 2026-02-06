@@ -1,0 +1,14 @@
+{
+  "name": "universal-feeds",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Universal feed aggregation framework for Clawdbot/OpenClaw",
+  "license": "MIT",
+  "bin": {
+    "universal-feeds": "bin/digest"
+  },
+  "type": "module",
+  "dependencies": {
+    "yaml": "^2.8.1"
+  }
+}

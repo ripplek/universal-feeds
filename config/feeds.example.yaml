@@ -1,0 +1,23 @@
+output:
+  language: en           # default: en; optional: zh
+  max_items: 30
+  summarize_top_n: 0     # MVP default: 0 (no summarization). Set >0 to enable later.
+  recency_hours: 24
+
+platforms:
+  x:
+    enabled: true
+    sources: [following]
+    following:
+      mode: following    # following | for_you
+      limit: 200
+
+# Topics/entities are optional in MVP; reserved for later ranking/tagging.
+topics: []
+entities: []
+
+sources:
+  allow_domains: []
+  block_domains: []
+  allow_authors: []
+  block_authors: []

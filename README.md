@@ -26,8 +26,28 @@ Platforms in scope (phased):
 
 ## Status
 
-- **Stage:** design + scaffolding
-- **Next:** decide MVP adapters + define schema + build daily digest pipeline
+- **Stage:** MVP executable skeleton (X Following) + docs
+- **Next:** add RSS/V2EX/YouTube adapters + preferences-based filtering
+
+## Quick start (MVP)
+
+```bash
+cd projects/universal-feeds
+
+# 1) install deps
+npm i
+
+# 2) (optional) copy config
+cp config/feeds.example.yaml config/feeds.yaml
+
+# 3) run digest (defaults to config/feeds.yaml if present, otherwise uses example config)
+node bin/digest --date today
+
+# outputs
+ls out/
+```
+
+X Following requires you to be logged into x.com in a local Chrome profile that `bird` can read.
 
 ## Quick links
 
