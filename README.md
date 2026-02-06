@@ -56,6 +56,7 @@ X Following requires you to be logged into x.com in a local Chrome profile that 
 - Roadmap: `docs/ROADMAP.md`
 - Preferences spec: `docs/PREFERENCES.md`
 - Source seed list: `docs/SOURCES.md`
+- RSSHub notes: `docs/RSSHUB.md`
 
 ## License
 
