@@ -69,8 +69,33 @@ async function fetchText(url, timeoutMs = 8000) {
   }
 }
 
-export async function fetchRssFromPacks({ packs = [], fetchedAt, maxPerSource = 20 }) {
+import crypto from 'node:crypto';
+
+function sha1(s) {
+  return crypto.createHash('sha1').update(String(s || ''), 'utf8').digest('hex');
+}
+
+function loadState(cachePath) {
+  try {
+    const raw = fs.readFileSync(cachePath, 'utf8');
+    return JSON.parse(raw);
+  } catch {
+    return { html: {} };
+  }
+}
+
+function saveState(cachePath, state) {
+  try {
+    fs.mkdirSync(path.dirname(cachePath), { recursive: true });
+    fs.writeFileSync(cachePath, JSON.stringify(state, null, 2), 'utf8');
+  } catch {
+    // ignore
+  }
+}
+
+export async function fetchRssFromPacks({ packs = [], fetchedAt, maxPerSource = 20, cachePath = null }) {
   const items = [];
+  const state = cachePath ? loadState(cachePath) : { html: {} };
 
   for (const packPath of packs) {
     const abs = path.resolve(packPath);
@@ -152,17 +177,27 @@ export async function fetchRssFromPacks({ packs = [], fetchedAt, maxPerSource = 
           return m?.[1] ? stripHtml(m[1]) : undefined;
         })();
 
+        const canonical = canonicalizeUrl(url);
+        const fingerprint = sha1([title || '', desc || ''].join('\n'));
+        const prev = state.html?.[canonical];
+        const changed = !prev || prev.fingerprint !== fingerprint;
+        if (changed) {
+          state.html = state.html || {};
+          state.html[canonical] = { fingerprint, lastSeenAt: fetchedAt, title, desc };
+        }
+
+        // If unchanged, treat it as old content (do not surface daily unless user wants).
+        const publishedAt = changed ? fetchedAt : prev?.lastSeenAt;
+
         items.push({
           platform: 'rss',
           sourceType: 'trending',
           source: { pack: packPath, name: s.name },
           id: String(url),
-          url: canonicalizeUrl(url),
+          url: canonical,
           title,
           text: desc,
-          // HTML pages often don't expose a reliable publish date.
-          // Use fetchedAt as a recency signal so they can surface in daily digests.
-          publishedAt: fetchedAt,
+          publishedAt,
           fetchedAt,
           tags: s.tags || undefined
         });
@@ -170,5 +205,6 @@ export async function fetchRssFromPacks({ packs = [], fetchedAt, maxPerSource = 
     }
   }
 
+  if (cachePath) saveState(cachePath, state);
   return items;
 }

@@ -26,6 +26,8 @@ export function tagAndScore(items, cfg) {
     const platformAllow = Array.isArray(t.platform_allow) ? t.platform_allow : null;
     const allowDomains = Array.isArray(t.allow_domains) ? t.allow_domains : null;
     const blockDomains = Array.isArray(t.block_domains) ? t.block_domains : null;
+    const sourcePackAllow = Array.isArray(t.source_pack_allow) ? t.source_pack_allow : null;
+    const sourceNameAllow = Array.isArray(t.source_name_allow) ? t.source_name_allow : null;
     const match = t.match === 'all' ? 'all' : 'any';
     return {
       name: t.name,
@@ -34,6 +36,8 @@ export function tagAndScore(items, cfg) {
       platformAllow,
       allowDomains,
       blockDomains,
+      sourcePackAllow,
+      sourceNameAllow,
       kws: kws.map((k) => normalizeText(k)).filter(Boolean),
       anchors: anchors.map((k) => normalizeText(k)).filter(Boolean),
       excludes: excludes.map((k) => normalizeText(k)).filter(Boolean)
@@ -61,6 +65,12 @@ export function tagAndScore(items, cfg) {
     for (const t of compiled) {
       if (!t.name) continue;
       if (t.platformAllow && !t.platformAllow.includes(it.platform)) continue;
+
+      // Source allow filters (optional)
+      const srcPack = it?.source?.pack;
+      const srcName = it?.source?.name;
+      if (t.sourcePackAllow && (!srcPack || !t.sourcePackAllow.includes(srcPack))) continue;
+      if (t.sourceNameAllow && (!srcName || !t.sourceNameAllow.includes(srcName))) continue;
 
       // Domain allow/block filters (optional)
       const domain = (() => {

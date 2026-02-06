@@ -40,6 +40,7 @@ function normalizeTweet(t, fetchedAt) {
   return {
     platform: 'x',
     sourceType: 'following',
+    source: { name: 'X Following' },
     id: String(id),
     url,
     text,

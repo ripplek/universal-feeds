@@ -26,7 +26,8 @@ export async function runDigest({ cfg, date, outDir }) {
   // RSS packs
   if (cfg?.platforms?.rss?.enabled && (cfg?.platforms?.rss?.sources || []).includes('trending')) {
     const packs = cfg.platforms.rss.packs || [];
-    const rssItems = await fetchRssFromPacks({ packs, fetchedAt, maxPerSource: 20 });
+    const cachePath = path.join(outDir, 'state-html.json');
+    const rssItems = await fetchRssFromPacks({ packs, fetchedAt, maxPerSource: 20, cachePath });
     items.push(...rssItems);
   }
 

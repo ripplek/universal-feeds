@@ -29,6 +29,8 @@ topics:
     platform_allow: ["x", "rss", "v2ex", "youtube"]
     allow_domains: []
     block_domains: []
+    source_pack_allow: []
+    source_name_allow: []
     boost: 1.5
 
   - name: ai-model-releases

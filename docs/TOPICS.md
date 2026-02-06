@@ -11,8 +11,10 @@ This doc lists practical knobs for improving topic quality.
   keywords: []         # keywords to match
   exclude_keywords: [] # if any appears, skip this topic
   platform_allow: []   # optional allowlist of platforms (x/rss/v2ex/youtube)
-  allow_domains: []    # optional allowlist of URL domains
-  block_domains: []    # optional blocklist of URL domains
+  allow_domains: []        # optional allowlist of URL domains
+  block_domains: []        # optional blocklist of URL domains
+  source_pack_allow: []    # optional allowlist of source pack paths (e.g. sources/us-ai-labs.yaml)
+  source_name_allow: []    # optional allowlist of source names (e.g. "OpenAI News")
   boost: 1.0
 ```
 

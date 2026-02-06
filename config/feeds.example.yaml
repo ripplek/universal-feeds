@@ -64,7 +64,9 @@ topics:
 
   - name: ai-model-releases
     match: any
-    # Restrict to trusted domains to reduce false positives.
+    # Restrict to trusted sources (pack/name) to reduce false positives.
+    source_pack_allow: ["sources/us-ai-labs.yaml"]
+    # Additionally allow from these domains (when source pack doesn't specify or for X links).
     allow_domains:
       - openai.com
       - anthropic.com
