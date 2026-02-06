@@ -1,0 +1,16 @@
+# US AI Labs / Frontier model orgs — official updates (RSS-first)
+
+sources:
+  - name: OpenAI News
+    url: https://openai.com/news/rss.xml
+    type: rss
+    region: us
+    tags: [ai, openai, model-releases]
+    notes: Official OpenAI news feed (includes product/model announcements)
+
+  - name: Google DeepMind Blog
+    url: https://deepmind.google/blog/rss.xml
+    type: rss
+    region: global
+    tags: [ai, deepmind, research]
+    notes: Official DeepMind blog RSS

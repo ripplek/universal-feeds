@@ -97,6 +97,7 @@ This document is a **seed list** of sources for the MVP and beyond. It focuses o
 Curated packs in this repo:
 - `sources/us-tech.yaml`
 - `sources/us-general.yaml`
+- `sources/us-ai-labs.yaml`
 - `sources/cn-tech.yaml`
 - `sources/cn-general.yaml`
 - `sources/youtube-ai-channels.yaml`

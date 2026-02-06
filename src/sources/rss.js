@@ -9,12 +9,14 @@ async function readYamlConfig(filePath) {
 }
 
 function stripHtml(s) {
-  return (s || '')
+  const t = (s || '')
+    // unwrap CDATA
+    .replace(/<!\[CDATA\[/g, '')
+    .replace(/\]\]>/g, '')
     .replace(/<script[\s\S]*?<\/script>/gi, '')
     .replace(/<style[\s\S]*?<\/style>/gi, '')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+    .replace(/<[^>]+>/g, ' ');
+  return t.replace(/\s+/g, ' ').trim();
 }
 
 function extractTag(text, tag) {

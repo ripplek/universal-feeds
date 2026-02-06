@@ -6,6 +6,7 @@ YAML packs that can be loaded by adapters/pipelines.
 
 - `us-tech.yaml`
 - `us-general.yaml`
+- `us-ai-labs.yaml`
 - `cn-tech.yaml`
 - `cn-general.yaml`
 - `youtube-ai-channels.yaml`
