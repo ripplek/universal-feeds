@@ -37,11 +37,13 @@ npm ci
 
 ## Quick start
 
-### Option A — Demo (always produces output)
+### Option A — Demo (topic filtering off)
 
 ```bash
 node bin/digest --config config/feeds.demo.yaml --date today
 ```
+
+`require_topic_match: false` avoids topic-filter empties, but output can still be empty if upstream sources are unreachable.
 
 ### Option B — Topic-only daily briefing (recommended)
 

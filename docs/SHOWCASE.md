@@ -25,25 +25,40 @@ cp config/feeds.example.yaml config/feeds.yaml
 node bin/digest --config config/feeds.yaml --date today
 ```
 
-## Example output (real run)
+## Local snapshot (real run on 2026-02-26)
 
-Below is an excerpt from a real run on **2026-02-06** using the demo config.
+This snapshot reflects the current local setup in this workspace:
+
+- `config/feeds.yaml` is missing, so CLI default falls back to `config/feeds.example.yaml`.
+- Effective output mode: `require_topic_match: true`, `recency_hours: 24`, `recommended.enabled: true`.
+- Enabled platforms: `rss`, `v2ex`, `youtube` (`x.enabled: false`).
+
+Commands run:
+
+```bash
+node bin/digest --config config/feeds.example.yaml --date today
+node bin/digest --config config/feeds.demo.yaml --date today
+```
+
+Result files on 2026-02-26:
+
+- `out/items-2026-02-26.jsonl`: `0` lines
+- `out/digest-2026-02-26.md`: digest generated with empty items
 
 ```text
-# Daily Digest — 2026-02-06
+# Daily Digest — 2026-02-26
+
+Fetched at: 2026-02-26T09:54:02.157Z
 
 ## All Items (by platform)
-
-### Media (RSS)
-- [rss] 机器之心（公众号合集，__biz+album） (WeChat article) [wechat, cn, ai, research] (score 1.00)
-  https://mp.weixin.qq.com/s?__biz=...
-- [rss] Olympic figure skating starts with the team event. Here's what to know about it (score 0.94)
-  https://www.npr.org/2026/02/06/...
-
-### YouTube
-- [youtube] Growing a family tamale shop | with ChatGPT (score 0.54)
-  https://www.youtube.com/watch?v=...
+_No items._
 ```
+
+Connectivity probe done the same day:
+
+- `https://openai.com/news/rss.xml` -> `fetch failed`
+- `https://www.v2ex.com/?tab=hot` -> `fetch failed`
+- `https://www.youtube.com/feeds/videos.xml?...` -> `fetch failed`
 
 ## Why contribute
 
