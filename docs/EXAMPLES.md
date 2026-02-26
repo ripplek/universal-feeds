@@ -2,7 +2,7 @@
 
 This page contains copy/paste examples for common setups.
 
-## 1) Minimal demo config (always produces output)
+## 1) Minimal demo config (topic filtering off)
 
 Use the included demo config:
 
@@ -10,7 +10,7 @@ Use the included demo config:
 node bin/digest --config config/feeds.demo.yaml --date today
 ```
 
-Key idea: `require_topic_match: false` so the digest is never empty.
+Key idea: `require_topic_match: false` avoids topic-filter empties, but output can still be empty if upstream sources are unreachable.
 
 ## 2) Topic-only daily briefing (recommended)
 

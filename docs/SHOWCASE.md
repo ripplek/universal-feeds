@@ -25,24 +25,48 @@ cp config/feeds.example.yaml config/feeds.yaml
 node bin/digest --config config/feeds.yaml --date today
 ```
 
-## Example output (real run)
+## Local snapshot (real run on 2026-02-26)
 
-Below is an excerpt from a real run on **2026-02-06** using the demo config.
+This section is based on the maintainer's real local run using local config (`config/feeds.yaml`) and generated output files on 2026-02-26.
+
+Effective local config highlights:
+
+- `require_topic_match: true`
+- `recency_hours: 24`
+- `recommended.enabled: true`
+- Enabled platforms: `x`, `rss`, `v2ex`, `youtube`
+
+Command run:
+
+```bash
+node bin/digest --config config/feeds.yaml --date today
+```
+
+Result files on 2026-02-26:
+
+- `out/items-2026-02-26.jsonl`: `8` lines
+- `out/digest-2026-02-26.md`: `64` lines
+
+Digest excerpt:
 
 ```text
-# Daily Digest — 2026-02-06
+# 每日简报 — 2026-02-26
 
-## All Items (by platform)
+抓取时间：2026-02-26T00:00:32.632Z
 
-### Media (RSS)
-- [rss] 机器之心（公众号合集，__biz+album） (WeChat article) [wechat, cn, ai, research] (score 1.00)
-  https://mp.weixin.qq.com/s?__biz=...
-- [rss] Olympic figure skating starts with the team event. Here's what to know about it (score 0.94)
-  https://www.npr.org/2026/02/06/...
+## 主题覆盖
+- OpenClaw / Clawdbot 动态: 3 (rss:3)
+- Agentic AI / 工作流: 1 (x:1)
 
-### YouTube
-- [youtube] Growing a family tamale shop | with ChatGPT (score 0.54)
-  https://www.youtube.com/watch?v=...
+## 实体覆盖
+- NVIDIA: 4 (x:3, rss:1)
+```
+
+Example matched item excerpt (`out/items-2026-02-26.jsonl`):
+
+```text
+{"platform":"x", ... "id":"2026800632317792392", ... "author":{"name":"GitHub"...}, "tags":["agentic-ai"]}
+{"platform":"rss", ... "title":"OpenClaw Users Are Allegedly Bypassing Anti-Bot Systems", ... "tags":["tech","culture","security","ai","openclaw"]}
 ```
 
 ## Why contribute
