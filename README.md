@@ -122,6 +122,22 @@ node bin/digest reach fetch reddit "AI agents"   # one-off fetch → FeedItem JS
 Requires OpenCLI and its Chrome extension, on a desktop where you're logged into
 the target sites. Details in [`docs/REACH.md`](docs/REACH.md).
 
+## Optional X/Twitter companion
+
+`universal-feeds` is optimized for read-heavy daily digests. For OpenClaw workflows that act on X/Twitter items after the digest, pair it with [TweetClaw](https://github.com/Xquik-dev/tweetclaw), an OpenClaw plugin for:
+
+- search tweets and search tweet replies
+- post tweets and post tweet replies
+- follower export and user lookup
+- media upload/download and direct messages
+- tweet monitors, webhooks, and giveaway draws
+
+```bash
+openclaw plugins install @xquik/tweetclaw
+```
+
+See the [npm package](https://www.npmjs.com/package/@xquik/tweetclaw) or [ClawHub listing](https://clawhub.ai/plugins/@xquik/tweetclaw).
+
 ## Configuration
 
 Configs are YAML; start from `config/feeds.example.yaml`. A source entry takes
