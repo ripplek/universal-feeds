@@ -27,6 +27,7 @@ Platforms in scope (phased):
 ## Status
 
 - **Stage:** usable CLI + skill entrypoint; actively iterating
+- **Dogfooding:** ran as a daily production digest (cron → iMessage delivery) from Feb 2026; X/RSS/V2EX/Weibo adapters exercised against live sources
 - **CI:** GitHub Actions runs unit tests + digest smoke test
 
 ## Install
