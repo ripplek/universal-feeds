@@ -11,7 +11,7 @@ import {
   materializeJudgments,
   emitCandidates,
   runFullDigest,
-  validateJudgmentsFile,
+  applyJudgments,
 } from '../operations.js';
 import { ReachConfig } from '../reach/config.js';
 import { fetchViaReach } from '../sources/reach.js';
@@ -41,28 +41,11 @@ export async function emitCandidatesTool(args = {}) {
 
 export async function applyJudgmentsTool(args = {}) {
   const ctx = resolveRunContext(args.config, args.date);
-  const judgmentsPath = materializeJudgments({
+  // Single fetch: validate + render share one candidate set (see operations.js).
+  return applyJudgments(ctx, {
     judgments: args.judgments,
     judgmentsPath: args.judgmentsPath,
-    outDir: ctx.outDir,
-    date: ctx.date,
   });
-  if (!judgmentsPath) {
-    throw new Error(
-      'apply_judgments requires `judgments` (array/JSONL) or `judgmentsPath`'
-    );
-  }
-  // Validate against the current candidate set so the caller gets feedback
-  // instead of silent drops (advisory — render proceeds regardless).
-  let validation = null;
-  try {
-    validation = await validateJudgmentsFile(ctx, judgmentsPath);
-  } catch {
-    // validation is advisory; proceed to render regardless
-  }
-  const out = await runFullDigest(ctx, { judgmentsPath });
-  if (validation) out.validation = validation;
-  return out;
 }
 
 export async function reachFetchTool(args = {}) {
