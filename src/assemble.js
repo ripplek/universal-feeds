@@ -12,32 +12,18 @@ import { pickRecommended } from './recommend.js';
 import { applyJudgments } from './judgments.js';
 import { trimByPlatform } from './trim.js';
 
-function applyRetweetPolicy(items, cfg) {
-  const xCfg = cfg?.platforms?.x?.following || {};
-  const includeRT = xCfg.include_retweets !== false;
-  const rtPenalty =
-    typeof xCfg.retweet_penalty === 'number' ? xCfg.retweet_penalty : 1.0;
-  const maxRt =
-    typeof xCfg.max_retweets === 'number' ? xCfg.max_retweets : Infinity;
-  let rtCount = 0;
-  const isRT = (it) => it.platform === 'x' && /^RT\s+@/i.test(it.text || '');
-
-  return items
-    .filter((it) => {
-      if (!isRT(it)) return true;
-      if (!includeRT) return false;
-      rtCount += 1;
-      return rtCount <= maxRt;
-    })
-    .map((it) =>
-      isRT(it) ? { ...it, score: (it.score || 0) * rtPenalty } : it
-    );
-}
-
-// items: post fetch/dedup/recency/unfurl candidates.
+// items: post fetch/dedup/recency/enrich candidates.
 // judgeIndex: Map from indexJudgments(), or null to use the keyword gate.
+// postScore: pure (items, cfg) → items hooks applied after scoring/gating,
+//   before the final sort/trim (e.g. the X retweet policy). Kept as injected
+//   hooks so this core stays platform-agnostic.
 // Returns { items, recommended } — both fully computed, sorted, trimmed.
-export function assembleDigest({ items, cfg, judgeIndex = null }) {
+export function assembleDigest({
+  items,
+  cfg,
+  judgeIndex = null,
+  postScore = [],
+}) {
   let out = rankItems(items, cfg);
 
   // Two views: allTagged (topic match not required) feeds the recommended
@@ -61,7 +47,7 @@ export function assembleDigest({ items, cfg, judgeIndex = null }) {
 
   const recommended = pickRecommended(allTagged, cfg);
 
-  out = applyRetweetPolicy(out, cfg);
+  for (const hook of postScore) out = hook(out, cfg);
   // Re-sort: boosts/penalties changed scores.
   out = out.sort((a, b) => (b.score || 0) - (a.score || 0));
   out = trimByPlatform(out, cfg);

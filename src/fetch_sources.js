@@ -8,7 +8,7 @@
 
 import path from 'node:path';
 import fs from 'node:fs';
-import { fetchXFollowing } from './sources/x_bird.js';
+import { fetchX, enrichX, applyXRetweetPolicy } from './sources/x.js';
 import { fetchRssFromPacks } from './sources/rss.js';
 import { fetchV2exHot } from './sources/v2ex.js';
 import { fetchYouTubeFromPacks } from './sources/youtube.js';
@@ -27,15 +27,9 @@ export const SOURCES = [
   {
     id: 'x',
     enabled: (cfg) => platformOn(cfg, 'x', 'following'),
-    fetch: (cfg, { fetchedAt }) => {
-      const f = cfg.platforms.x.following || {};
-      return fetchXFollowing({
-        limit: f.limit ?? 200,
-        mode: f.mode ?? 'following',
-        timeoutMs: f.timeout_ms ?? 60000,
-        fetchedAt,
-      });
-    },
+    fetch: fetchX,
+    enrich: enrichX, // unfurl low-info tweets (post-fetch, I/O)
+    postScore: applyXRetweetPolicy, // drop/cap/penalize RTs (post-score, pure)
   },
   {
     id: 'rss',
@@ -128,18 +122,20 @@ export const SOURCES = [
   },
 ];
 
+function isEnabled(s, cfg) {
+  try {
+    return !!s.enabled(cfg);
+  } catch {
+    return false;
+  }
+}
+
 // Fetch every enabled source into one FeedItem[]. `sources` is injectable for
 // tests. Each source is isolated: a throw warns and yields nothing.
 export async function fetchAllSources(cfg, ctx, sources = SOURCES) {
   const out = [];
   for (const s of sources) {
-    let on;
-    try {
-      on = s.enabled(cfg);
-    } catch {
-      on = false;
-    }
-    if (!on) continue;
+    if (!isEnabled(s, cfg)) continue;
     try {
       const items = await s.fetch(cfg, ctx);
       if (Array.isArray(items)) out.push(...items);
@@ -148,4 +144,28 @@ export async function fetchAllSources(cfg, ctx, sources = SOURCES) {
     }
   }
   return out;
+}
+
+// Run each enabled source's optional `enrich(items, cfg, ctx)` hook in order
+// (post-fetch, I/O allowed — e.g. X unfurl). Best-effort per source.
+export async function runEnrichers(items, cfg, ctx, sources = SOURCES) {
+  let out = items;
+  for (const s of sources) {
+    if (!s.enrich || !isEnabled(s, cfg)) continue;
+    try {
+      const next = await s.enrich(out, cfg, ctx);
+      if (Array.isArray(next)) out = next;
+    } catch (e) {
+      console.error(`# enrich ${s.id} failed: ${e?.message || e}`);
+    }
+  }
+  return out;
+}
+
+// Collect the `postScore(items, cfg)` hooks of enabled sources (pure; applied
+// inside assembleDigest after scoring — e.g. X retweet policy).
+export function collectPostScore(cfg, sources = SOURCES) {
+  return sources
+    .filter((s) => s.postScore && isEnabled(s, cfg))
+    .map((s) => s.postScore);
 }

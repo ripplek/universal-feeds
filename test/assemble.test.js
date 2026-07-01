@@ -71,51 +71,36 @@ test('judgment gate replaces keyword gate when judgeIndex provided', () => {
   assert.ok(out[0].tags.includes('ai'));
 });
 
-test('retweet policy: drops RTs when include_retweets false', () => {
-  const items = [
-    { platform: 'x', id: '1', url: 'https://x/1', text: 'RT @a: hi' },
-    { platform: 'x', id: '2', url: 'https://x/2', text: 'original thought' },
-  ];
-  const { items: out } = assembleDigest({
-    items,
-    cfg: cfg({
-      output: { max_items: 30, recency_hours: 24, require_topic_match: false },
-      platforms: { x: { following: { include_retweets: false } } },
-    }),
-  });
-  assert.equal(
-    out.some((it) => /^RT/.test(it.text)),
-    false
-  );
-  assert.equal(out.length, 1);
-});
-
-test('retweet penalty multiplies RT score', () => {
+test('postScore hooks run after scoring, before sort/trim', () => {
   const items = [
     {
-      platform: 'x',
+      platform: 'rss',
       id: '1',
-      url: 'https://x/1',
-      text: 'RT @a: hi',
+      url: 'https://a/1',
+      title: 'x',
+      metrics: { like: 1 },
+    },
+    {
+      platform: 'rss',
+      id: '2',
+      url: 'https://a/2',
+      title: 'x',
       metrics: { like: 100 },
     },
   ];
-  const base = assembleDigest({
+  // A stub hook that drops id '2' and zeroes remaining scores.
+  const drop2 = (list) =>
+    list.filter((it) => it.id !== '2').map((it) => ({ ...it, score: 0 }));
+  const { items: out } = assembleDigest({
     items,
-    cfg: cfg({
-      output: { max_items: 30, recency_hours: 24, require_topic_match: false },
-      platforms: { x: { following: {} } },
-    }),
-  }).items[0].score;
-  const penalized = assembleDigest({
-    items,
-    cfg: cfg({
-      output: { max_items: 30, recency_hours: 24, require_topic_match: false },
-      platforms: { x: { following: { retweet_penalty: 0.5 } } },
-    }),
-  }).items[0].score;
-  assert.ok(penalized < base);
-  assert.ok(Math.abs(penalized - base * 0.5) < 1e-9);
+    cfg: cfg(),
+    postScore: [drop2],
+  });
+  assert.deepEqual(
+    out.map((it) => it.id),
+    ['1']
+  );
+  assert.equal(out[0].score, 0);
 });
 
 test('trim caps total to max_items and sorts by score desc', () => {

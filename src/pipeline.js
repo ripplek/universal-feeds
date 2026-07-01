@@ -1,9 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { fetchAllSources } from './fetch_sources.js';
+import {
+  fetchAllSources,
+  runEnrichers,
+  collectPostScore,
+} from './fetch_sources.js';
 import { dedupItems } from './dedup.js';
 import { filterXNoise } from './filters.js';
-import { unfurlUrl } from './unfurl.js';
 import { buildCandidates, serializeCandidates } from './candidates.js';
 import { parseJudgments, indexJudgments } from './judgments.js';
 import { assembleDigest } from './assemble.js';
@@ -50,75 +53,8 @@ export async function runDigest({
     return { candidatesPath, count: cands.length };
   }
 
-  // X low-info enrichment: if a tweet is mostly link/mentions, unfurl the first URL
-  // and display the destination title in the digest.
-  const xCfg2 = cfg?.platforms?.x?.following || {};
-  const unfurlEnabled = xCfg2?.unfurl?.enabled !== false;
-  const unfurlMax = xCfg2?.unfurl?.max_per_run ?? 10;
-  const unfurlTimeoutMs = xCfg2?.unfurl?.timeout_ms ?? 8000;
-  const cachePathUnfurl = path.join(outDir, 'state-unfurl.json');
-
-  let unfurlCache = {};
-  try {
-    unfurlCache = JSON.parse(fs.readFileSync(cachePathUnfurl, 'utf8'));
-  } catch {
-    unfurlCache = {};
-  }
-
-  const urlRe = /https?:\/\/\S+/gi;
-  const stripEff = (t) =>
-    String(t || '')
-      .replace(/https?:\/\/\S+/gi, ' ')
-      .replace(/@[A-Za-z0-9_]{1,30}/g, ' ')
-      .replace(/#[\p{L}\p{N}_]{2,}/gu, ' ')
-      .replace(/[\s\u200B]+/g, ' ')
-      .trim();
-
-  if (unfurlEnabled) {
-    let did = 0;
-    for (let i = 0; i < items.length && did < unfurlMax; i++) {
-      const it = items[i];
-      if (it.platform !== 'x') continue;
-      if (it?.debug?.unfurl?.title) continue;
-
-      const text = it.text || '';
-      const eff = stripEff(text);
-      if (eff.length >= 25) continue;
-
-      const urls = text.match(urlRe) || [];
-      if (!urls.length) continue;
-
-      const u0 = urls[0];
-      const cached = unfurlCache[u0];
-      let meta = cached;
-      if (!meta) {
-        meta = await unfurlUrl(u0, { timeoutMs: unfurlTimeoutMs });
-        unfurlCache[u0] = meta;
-        did += 1;
-      }
-
-      if (meta?.title || meta?.finalUrl) {
-        items[i] = {
-          ...it,
-          title: it.title || meta.title,
-          debug: {
-            ...(it.debug || {}),
-            unfurl: meta,
-          },
-        };
-      }
-    }
-
-    try {
-      fs.writeFileSync(
-        cachePathUnfurl,
-        JSON.stringify(unfurlCache, null, 2) + '\n',
-        'utf8'
-      );
-    } catch {
-      // ignore cache write
-    }
-  }
+  // Post-fetch enrichment (per-source `enrich` hook; e.g. X unfurl \u2014 I/O).
+  items = await runEnrichers(items, cfg, { fetchedAt, outDir });
 
   // Resolve the relevance gate input (I/O stays in the shell). AI judgments
   // when filter.mode is llm/hybrid and a judgments file is present; otherwise
@@ -142,8 +78,13 @@ export async function runDigest({
     );
   }
 
-  // Pure core: rank → topic/relevance gate → recommended → retweet policy → trim.
-  const assembled = assembleDigest({ items, cfg, judgeIndex });
+  // Pure core: rank → topic/relevance gate → recommended → postScore → trim.
+  const assembled = assembleDigest({
+    items,
+    cfg,
+    judgeIndex,
+    postScore: collectPostScore(cfg),
+  });
   items = assembled.items;
   const recommended = assembled.recommended;
 
