@@ -1,12 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { fetchXFollowing } from './sources/x_bird.js';
-import { fetchRssFromPacks } from './sources/rss.js';
-import { fetchV2exHot } from './sources/v2ex.js';
-import { fetchYouTubeFromPacks } from './sources/youtube.js';
-import { fetchViaReach } from './sources/reach.js';
-import { getAllChannels } from './reach/channels/index.js';
-import { ReachConfig } from './reach/config.js';
+import { fetchAllSources } from './fetch_sources.js';
 import { dedupItems } from './dedup.js';
 import { filterXNoise } from './filters.js';
 import { unfurlUrl } from './unfurl.js';
@@ -26,125 +20,9 @@ export async function runDigest({
   globalThis.__UF_CFG = cfg;
 
   const fetchedAt = new Date().toISOString();
-  let items = [];
 
-  // X — Following
-  if (
-    cfg?.platforms?.x?.enabled &&
-    (cfg?.platforms?.x?.sources || []).includes('following')
-  ) {
-    const limit = cfg.platforms.x.following?.limit ?? 200;
-    const mode = cfg.platforms.x.following?.mode ?? 'following';
-    const timeoutMs = cfg.platforms.x.following?.timeout_ms ?? 60000;
-    const xItems = await fetchXFollowing({ limit, mode, timeoutMs, fetchedAt });
-    items.push(...xItems);
-  }
-
-  // RSS packs
-  if (
-    cfg?.platforms?.rss?.enabled &&
-    (cfg?.platforms?.rss?.sources || []).includes('trending')
-  ) {
-    const packs = cfg.platforms.rss.packs || [];
-    const cachePath = path.join(outDir, 'state-html.json');
-    const rssItems = await fetchRssFromPacks({
-      packs,
-      fetchedAt,
-      maxPerSource: 20,
-      cachePath,
-    });
-    items.push(...rssItems);
-  }
-
-  // WeChat MP album (best-effort)
-  try {
-    const wechatPackPath = 'sources/cn-wechat-hot.yaml';
-    const wechatPack = (await import('yaml')).default.parse(
-      fs.readFileSync(wechatPackPath, 'utf8')
-    );
-    const wechatSources = Array.isArray(wechatPack?.sources)
-      ? wechatPack.sources
-      : [];
-    const albumSources = wechatSources.filter(
-      (s) => s.type === 'html' && String(s.url || '').includes('mp/appmsgalbum')
-    );
-    if (albumSources.length) {
-      const { fetchWeChatMpAlbum } = await import('./sources/wechat_mp.js');
-      for (const s of albumSources) {
-        const ws = await fetchWeChatMpAlbum({
-          name: s.name,
-          url: s.url,
-          fetchedAt,
-          limit: 30,
-        });
-        // inherit tags
-        for (const it of ws) {
-          it.tags = Array.isArray(s.tags) ? s.tags : it.tags;
-          it.source = { pack: wechatPackPath, name: s.name };
-        }
-        items.push(...ws);
-      }
-    }
-  } catch {
-    // best-effort
-  }
-
-  // V2EX hot
-  if (
-    cfg?.platforms?.v2ex?.enabled &&
-    (cfg?.platforms?.v2ex?.sources || []).includes('trending')
-  ) {
-    try {
-      const v2 = await fetchV2exHot({ fetchedAt, limit: 30 });
-      items.push(...v2);
-    } catch {
-      // best-effort
-    }
-  }
-
-  // YouTube channel RSS
-  if (
-    cfg?.platforms?.youtube?.enabled &&
-    (cfg?.platforms?.youtube?.sources || []).includes('trending')
-  ) {
-    const packs = cfg.platforms.youtube.packs || [];
-    const yt = await fetchYouTubeFromPacks({
-      packs,
-      fetchedAt,
-      maxPerSource: 10,
-    });
-    items.push(...yt);
-  }
-
-  // Reach layer — auth-gated platforms via OpenCLI browser bridge.
-  // Each channel is opt-in per config: platforms.<name>.reach.enabled = true.
-  // Best-effort: an unavailable channel warns and contributes nothing.
-  const reachChannels = getAllChannels().filter(
-    (ch) => cfg?.platforms?.[ch.name]?.reach?.enabled
-  );
-  if (reachChannels.length) {
-    const reachConfig = new ReachConfig();
-    for (const ch of reachChannels) {
-      const rc = cfg.platforms[ch.name].reach;
-      try {
-        const reachItems = await fetchViaReach({
-          platform: ch.name,
-          query: rc.query,
-          mode: rc.mode || 'auto',
-          limit: rc.limit,
-          config: reachConfig,
-          fetchedAt,
-        });
-        // Inherit config-declared tags so topic tagging/boosts still apply.
-        if (Array.isArray(rc.tags)) {
-          for (const it of reachItems) it.tags = rc.tags;
-        }
-        items.push(...reachItems);
-      } catch (e) {
-        console.error(`# reach: ${ch.name} failed: ${e?.message || e}`);
-      }
-    }
-  }
+  // Fetch every enabled source through one seam (see src/fetch_sources.js).
+  let items = await fetchAllSources(cfg, { fetchedAt, outDir });
 
   // De-noise + de-dup
   items = filterXNoise(items, cfg);
