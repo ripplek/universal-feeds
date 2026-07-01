@@ -7,7 +7,11 @@ import {
 } from './fetch_sources.js';
 import { dedupItems } from './dedup.js';
 import { filterXNoise } from './filters.js';
-import { buildCandidates, serializeCandidates } from './candidates.js';
+import {
+  buildCandidates,
+  serializeCandidates,
+  buildJudgingTask,
+} from './candidates.js';
 import { parseJudgments, indexJudgments } from './judgments.js';
 import { assembleDigest } from './assemble.js';
 import { renderDigestMarkdown } from './render.js';
@@ -50,7 +54,19 @@ export async function runDigest({
     });
     const candidatesPath = path.join(outDir, `candidates-${date}.jsonl`);
     fs.writeFileSync(candidatesPath, serializeCandidates(cands), 'utf8');
-    return { candidatesPath, count: cands.length };
+
+    // Also emit a self-contained judging task so an agent can judge without
+    // loading any skill (see docs/FILTERING.md + AGENTS.md).
+    const judgingTaskPath = path.join(outDir, `judging-task-${date}.json`);
+    const task = buildJudgingTask({
+      cfg,
+      date,
+      count: cands.length,
+      candidatesPath,
+    });
+    fs.writeFileSync(judgingTaskPath, JSON.stringify(task, null, 2), 'utf8');
+
+    return { candidatesPath, judgingTaskPath, count: cands.length };
   }
 
   // Post-fetch enrichment (per-source `enrich` hook; e.g. X unfurl \u2014 I/O).

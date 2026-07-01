@@ -17,7 +17,7 @@ Legend: `[x]` done · `[~]` partial · `[ ]` not started.
 - [x] Adapter: V2EX hot topics (`src/sources/v2ex.js`)
 - [x] Adapter: RSS (curated list of media feeds) (`src/sources/rss.js` + `sources/*.yaml` packs)
 - [x] Digest renderer (Markdown) (`src/render.js`)
-- [~] Cron template to run daily and send to user — dogfooded via an **external** cron → iMessage job; no template committed to this repo yet
+- [x] Cron template to run daily and send to user — `examples/cron/daily-digest.sh` with a pluggable `$UF_DELIVER` seam
 
 ## Phase 2 — Quality
 
@@ -72,3 +72,8 @@ Ported from Agent-Reach (MIT); depends on the OpenCLI browser bridge. Desktop-on
 - [x] X low-info noise filtering (`src/filters.js`)
 - [x] Clawdbot `SKILL.md` + installer script (`skill/`, `scripts/install_skill.sh`)
 - [x] CI: unit tests + digest smoke test (`.github/workflows/ci.yml`)
+- [x] Runtime-agnostic agent contract (`AGENTS.md`) + `--json` output / stable exit codes on the digest CLI
+- [x] MCP server (`src/mcp/`, `bin/mcp`) — `run_digest` / `emit_candidates` / `apply_judgments` / `reach_fetch` for any MCP agent
+- [x] Self-contained judging task (`out/judging-task-<date>.json`) + `--validate-judgments` dry-run + fixture (`examples/judging/`)
+- [x] Multi-runtime skill installer (Clawdbot + Claude Code) (`scripts/install_skill.sh`)
+- [x] Scheduled-delivery template with a pluggable seam (`examples/cron/`)

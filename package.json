@@ -2,10 +2,11 @@
   "name": "universal-feeds",
   "version": "0.1.0",
   "private": false,
-  "description": "Universal feed aggregation framework for Clawdbot/OpenClaw",
+  "description": "Universal feed aggregation framework for AI agents (MCP server + CLI; Clawdbot/OpenClaw/Claude Code)",
   "license": "MIT",
   "bin": {
-    "universal-feeds": "bin/digest"
+    "universal-feeds": "bin/digest",
+    "universal-feeds-mcp": "bin/mcp"
   },
   "type": "module",
   "scripts": {
@@ -15,6 +16,7 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "yaml": "^2.8.1"
   },
   "devDependencies": {

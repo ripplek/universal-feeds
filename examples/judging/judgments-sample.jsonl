@@ -1,0 +1,4 @@
+{"id":"reddit:1tolh94","relevant":true,"score":0.86,"topics":["agentic-ai"],"why":"hands-on open-source agent framework"}
+{"id":"hackernews:39001122","relevant":true,"score":0.78,"topics":["llm-releases"],"why":"new model + open eval harness"}
+{"id":"36kr:5567788","relevant":true,"score":0.7,"topics":["llm-releases"],"why":"cross-language model release, relevant to an English AI profile"}
+{"id":"reddit:crypto42","relevant":false,"score":0.05,"why":"crypto trading, explicitly excluded by the profile"}

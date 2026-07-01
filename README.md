@@ -51,6 +51,37 @@ node bin/digest --config config/feeds.demo.yaml --date today
 Full setup — reach platforms, AI filtering, scheduled delivery — is in
 [`INSTALL.md`](INSTALL.md). Keeping it current is in [`UPDATE.md`](UPDATE.md).
 
+## Use with your agent
+
+The digest is a CLI that reads/writes plain files, so any agent runtime can drive
+it. The full runtime-agnostic contract — commands, `--json` output, exit codes,
+and the candidates → judgments → render loop — is in [`AGENTS.md`](AGENTS.md).
+
+- **Any MCP agent (Claude Code / Desktop, …)** — run the bundled MCP server;
+  no bespoke skill needed:
+
+  ```bash
+  node bin/mcp   # exposes run_digest / emit_candidates / apply_judgments / reach_fetch
+  ```
+
+  Register it per [`AGENTS.md`](AGENTS.md#mcp-server).
+
+- **Claude Code (as a skill)** — `bash scripts/install_skill.sh claude`
+- **Clawdbot / OpenClaw (as a skill)** — `bash scripts/install_skill.sh` (default)
+- **Anything else** — shell out and parse `--json`:
+
+  ```bash
+  node bin/digest --config config/feeds.yaml --json
+  ```
+
+**Capability tiers.** Tier-0 sources (RSS / YouTube / V2EX / Hacker News / 36Kr)
+need no login and run anywhere, including headless/CI. The reach layer (Reddit,
+Twitter, Bilibili, Xiaohongshu, …) drives a real logged-in Chrome and is
+**desktop-only** — an agent in a headless/cloud environment can use tier-0 only.
+
+Scheduled delivery has a copy-paste cron template with a pluggable delivery seam
+in [`examples/cron/`](examples/cron/).
+
 ## Reach layer (auth-gated platforms)
 
 ```bash
@@ -92,6 +123,7 @@ platforms:
 
 | Topic                | File                                           |
 | -------------------- | ---------------------------------------------- |
+| Agent integration    | [`AGENTS.md`](AGENTS.md)                       |
 | Install / setup      | [`INSTALL.md`](INSTALL.md)                     |
 | Update / maintenance | [`UPDATE.md`](UPDATE.md)                       |
 | Reach layer          | [`docs/REACH.md`](docs/REACH.md)               |
