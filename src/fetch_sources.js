@@ -40,6 +40,8 @@ export const SOURCES = [
         fetchedAt,
         maxPerSource: 20,
         cachePath: path.join(outDir, 'state-html.json'),
+        rsshub: cfg.rsshub,
+        htmlSources: cfg.html_sources,
       }),
   },
   {
