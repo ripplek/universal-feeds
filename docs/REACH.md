@@ -30,6 +30,7 @@ for why fetching runs on the desktop.
 
 ```bash
 node bin/digest reach doctor                 # health of every channel
+node bin/digest reach watch                   # compact health + update check (cron; exit≠0 if unhealthy)
 node bin/digest reach fetch reddit "ai"      # one-off fetch → FeedItem JSONL
 node bin/digest reach configure twitter_backend OpenCLI
 ```
@@ -59,14 +60,25 @@ platform's feed/trending command.
 
 ## Supported channels
 
-| Channel     | platform      | feed cmd   | search | verified          |
-| ----------- | ------------- | ---------- | ------ | ----------------- |
-| twitter     | `x`           | `timeline` | ✅     | fields (live)     |
-| reddit      | `reddit`      | `home`     | ✅     | end-to-end (live) |
-| bilibili    | `bilibili`    | `dynamic`  | ✅     | fields (live)     |
-| xiaohongshu | `xiaohongshu` | `feed`     | ✅     | fields (live)     |
-| facebook    | `facebook`    | `feed`     | ✅     | adapter columns   |
-| instagram   | `instagram`   | `explore`  | ✅     | adapter columns   |
+| Channel     | platform      | feed cmd   | search | verified              |
+| ----------- | ------------- | ---------- | ------ | --------------------- |
+| twitter     | `x`           | `timeline` | ✅     | fields (live)         |
+| reddit      | `reddit`      | `home`     | ✅     | end-to-end (live)     |
+| bilibili    | `bilibili`    | `dynamic`  | ✅     | fields (live)         |
+| xiaohongshu | `xiaohongshu` | `feed`     | ✅     | fields (live)         |
+| facebook    | `facebook`    | `feed`     | —      | adapter columns\*     |
+| instagram   | `instagram`   | `explore`  | —      | adapter columns\*     |
+| linkedin    | `linkedin`    | `timeline` | —      | adapter columns (t2)† |
+| xueqiu      | `xueqiu`      | `feed`     | —      | adapter columns       |
+
+\* facebook/instagram live fetches returned empty this run (feed may require
+scroll/interaction); mapping is from the OpenCLI adapter's declared columns.
+† linkedin is tier-2 (OpenCLI backend `off` until configured); `search` is
+omitted because its OpenCLI command returns job listings, not posts. xueqiu
+`search` is omitted for the same reason (it returns stock symbols); use `feed`
+or `mode: trending` (the `hot` command). Podcast platform **xiaoyuzhou** is
+intentionally not a channel — its adapter is podcast-lookup only, with no
+feed/search command.
 
 Output is mapped to `FeedItem` (see `docs/SCHEMA.md`) by a defensive,
 alias-based normalizer (`src/reach/normalize.js`) so minor per-command column

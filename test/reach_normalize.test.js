@@ -89,6 +89,42 @@ test('millisecond epoch is not double-scaled', () => {
   assert.equal(it.publishedAt, new Date(ms).toISOString());
 });
 
+test('linkedin timeline row (posted_at + reactions) → FeedItem', () => {
+  const row = {
+    rank: 1,
+    author: 'Eve',
+    author_url: 'https://linkedin.com/in/eve',
+    headline: 'CTO',
+    text: 'we are hiring',
+    posted_at: '2026-06-30',
+    reactions: 42,
+    comments: 5,
+    url: 'https://www.linkedin.com/feed/update/urn:li:activity:1',
+  };
+  const it = normalizeRow(row, {
+    platform: 'linkedin',
+    sourceType: 'following',
+  });
+  assert.equal(it.author.name, 'Eve');
+  assert.equal(it.text, 'we are hiring');
+  assert.equal(it.metrics.like, 42);
+  assert.equal(it.metrics.reply, 5);
+  assert.match(it.publishedAt, /^2026-06-30/);
+});
+
+test('xueqiu feed row (replies) → FeedItem', () => {
+  const row = {
+    author: 'trader',
+    text: '$NVDA 涨',
+    likes: 12,
+    replies: 3,
+    url: 'https://xueqiu.com/1/2',
+  };
+  const it = normalizeRow(row, { platform: 'xueqiu', sourceType: 'following' });
+  assert.equal(it.metrics.like, 12);
+  assert.equal(it.metrics.reply, 3);
+});
+
 test('numeric strings with commas parse to numbers', () => {
   const it = normalizeRow(
     { title: 't', url: 'u://x', play: '1,234' },

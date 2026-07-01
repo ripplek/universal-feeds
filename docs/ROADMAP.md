@@ -41,11 +41,13 @@ Ported from Agent-Reach (MIT); depends on the OpenCLI browser bridge. Desktop-on
 - [x] Core: probe / config (0o600) / opencli backend / normalize / channels / doctor
 - [x] `digest reach doctor | configure | fetch` CLI
 - [x] Pipeline integration (opt-in per `platforms.<name>.reach`)
-- [x] Channels: twitter, reddit, bilibili, xiaohongshu, facebook, instagram
+- [x] Channels: twitter, reddit, bilibili, xiaohongshu, facebook, instagram, linkedin, xueqiu
 - [x] Verified live: reddit end-to-end; twitter/bilibili/xiaohongshu field-shape
-- [ ] Calibrate facebook / instagram against a live run (mapped from adapter columns only)
-- [ ] Add linkedin / xueqiu / xiaoyuzhou channels (OpenCLI backends off/warn today)
-- [ ] `reach watch` for scheduled health + update checks
+- [x] `reach watch` — compact health + npm update check, cron-friendly exit code
+- [~] facebook / instagram — mapped from adapter columns; live fetch returned empty (needs a logged-in run with feed content to calibrate)
+- [~] linkedin — added (feed=`timeline`); tier-2, OpenCLI backend `off` until configured
+- [x] xueqiu — added (feed + `hot` trending); `search` omitted (returns stock symbols)
+- [—] xiaoyuzhou — skipped: podcast-lookup adapter only, no feed/search command
 
 ## Phase 4 — Short video platforms
 

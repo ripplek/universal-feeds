@@ -6,6 +6,7 @@
 
 import { ReachConfig } from './config.js';
 import { checkAll, formatReport } from './doctor.js';
+import { runWatch } from './watch.js';
 import { fetchViaReach } from '../sources/reach.js';
 
 function help() {
@@ -13,6 +14,7 @@ function help() {
     'Usage: digest reach <command>',
     '',
     '  doctor                         Show reach channel health',
+    '  watch                          Compact health + update check (cron-friendly exit code)',
     '  configure <key> <value>        Set a reach config value (~/.universal-feeds/config.yaml)',
     '  fetch <platform> [query]       One-off fetch; prints normalized FeedItem JSONL',
     '',
@@ -30,6 +32,11 @@ export async function runReachCommand(argv) {
 
   if (cmd === 'doctor') {
     console.log(formatReport(checkAll(config)));
+    return;
+  }
+
+  if (cmd === 'watch') {
+    await runWatch({ config });
     return;
   }
 

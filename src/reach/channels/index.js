@@ -89,7 +89,38 @@ export const CHANNELS = [
       search: { cmd: 'explore', sourceType: 'search' },
     },
   },
+  {
+    // linkedin `search` is job-listings (different schema); the content feed is
+    // `timeline`. Backend is tier-2 (off until configured) — see reach doctor.
+    name: 'linkedin',
+    platform: 'linkedin',
+    description: 'LinkedIn 动态',
+    tier: 2,
+    backends: ['OpenCLI'],
+    hosts: ['linkedin.com'],
+    commands: {
+      feed: { cmd: 'timeline', sourceType: 'following' },
+    },
+  },
+  {
+    // xueqiu `search` returns stock symbols, not posts; content lives in
+    // `feed` (following) and `hot` (trending).
+    name: 'xueqiu',
+    platform: 'xueqiu',
+    description: '雪球讨论',
+    tier: 1,
+    backends: ['OpenCLI'],
+    hosts: ['xueqiu.com'],
+    commands: {
+      feed: { cmd: 'feed', sourceType: 'following' },
+      trending: { cmd: 'hot', sourceType: 'trending' },
+    },
+  },
 ];
+
+// Note: xiaoyuzhou (小宇宙) is intentionally omitted — its OpenCLI adapter is
+// podcast-lookup only (episode/podcast/transcript), with no feed/search command
+// that fits the digest's generic feed model.
 
 export function getAllChannels() {
   return CHANNELS;
