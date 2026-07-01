@@ -58,6 +58,15 @@ platforms:
 `mode: auto` (default) picks `search` when a `query` is set, otherwise the
 platform's feed/trending command.
 
+> **Gotcha — `require_topic_match: true` drops non-matching reach items.**
+> Topic matching keys off an item's **content** (title/text vs a topic's
+> keywords/anchors). The `tags:` you set on a reach platform are merged into the
+> output for boosts/grouping but do **not** count toward topic survival
+> (`src/tagging.js`). So in focused mode, reach platforms whose content doesn't
+> hit an English keyword — notably Chinese ones (36kr, weibo) — silently vanish.
+> When reach platforms are enabled, keep `require_topic_match: false`, or add
+> topic anchors that actually match the reach content (e.g. Chinese terms).
+
 ## Supported channels
 
 | Channel     | platform      | feed cmd   | search | verified              |

@@ -4,6 +4,9 @@ output:
   summarize_top_n: 0 # MVP default: 0 (no summarization). Set >0 to enable later.
   recency_hours: 24
   require_topic_match: true # if true, only keep items matching any topic
+  # NOTE: matching is content-based; reach `tags:` do NOT count. Set this to
+  # false when enabling reach platforms or Chinese ones (36kr/weibo) vanish.
+  # See docs/REACH.md.
   max_per_topic: 8 # limit items shown under each topic section
 
 # Additive section: what's hot in the last 24h, chosen using your existing topics/entities as a profile.
