@@ -6,6 +6,7 @@ description: Generate a daily topic-based digest from multiple feeds (X Followin
 # universal-feeds (Clawdbot Skill)
 
 This repo ships a digest pipeline that:
+
 - fetches items from multiple sources
 - normalizes to `FeedItem`
 - de-dups + ranks + topic-tags
@@ -15,10 +16,10 @@ This repo ships a digest pipeline that:
 
 Clawdbot loads skills in this precedence order:
 
-1) `<workspace>/skills/<name>/SKILL.md` (highest)
-2) `~/.clawdbot/skills/<name>/SKILL.md`
-3) Bundled skills
-4) `skills.load.extraDirs`
+1. `<workspace>/skills/<name>/SKILL.md` (highest)
+2. `~/.clawdbot/skills/<name>/SKILL.md`
+3. Bundled skills
+4. `skills.load.extraDirs`
 
 Recommended install (workspace):
 
@@ -50,6 +51,7 @@ node bin/digest --config config/feeds.yaml --date today
 ```
 
 Outputs:
+
 - `out/items-YYYY-MM-DD.jsonl`
 - `out/digest-YYYY-MM-DD.md`
 
@@ -99,7 +101,50 @@ Helper:
 node scripts/rsshub_suggest.mjs --config config/feeds.yaml "公众号"
 ```
 
+## AI relevance filtering (agent-judged)
+
+When `filter.mode` is `llm` (or `hybrid`) in `feeds.yaml`, the digest delegates
+relevance judgment to you (the agent) instead of matching keywords. This is a
+three-step hand-off — you run the judging middle step:
+
+1. **Emit candidates** — run:
+
+   ```bash
+   node bin/digest --config config/feeds.yaml --stage candidates
+   ```
+
+   Writes `out/candidates-<date>.jsonl`, one compact item per line:
+   `{"id":"<platform:id>","platform":"…","title":"…","text":"…","url":"…"}`.
+
+2. **Judge each candidate** against the interest profile in `feeds.yaml`
+   (`filter.profile`). **Use `claude-haiku-4-5`** for this bulk classification —
+   it is cheap and fast; delegate to it (e.g. a Haiku sub-task) rather than
+   judging with a larger model. For every candidate output one JSON object:
+
+   ```json
+   {"id":"<same id>","relevant":true,"score":0.0-1.0,"topics":["agentic-ai"],"why":"one line"}
+   ```
+   - `relevant` / `score`: is this worth the user's attention, and how strongly.
+   - `topics`: reuse the `topics[].name` values from `feeds.yaml` where they fit
+     (they drive the digest's grouping and boosts); add new ones sparingly.
+   - Judge on meaning, not keywords — cross-language is expected (a Chinese post
+     about model releases is relevant to an English AI profile).
+     Write all objects (JSONL or a JSON array) to `out/judgments-<date>.jsonl`.
+
+3. **Render** — run:
+   ```bash
+   node bin/digest --config config/feeds.yaml --judgments out/judgments-<date>.jsonl
+   ```
+   The digest keeps items you marked relevant (score ≥ `filter.min_relevance`
+   when `output.require_topic_match: true`), tags them with your `topics`, folds
+   `score` into ranking, and renders `out/digest-<date>.md`.
+
+Full contract: `docs/FILTERING.md`. If no judgments file is supplied while
+`mode: llm`, the digest falls back to the keyword gate (so CI / offline / no-agent
+runs still work).
+
 ## Notes
 
 - Prefer RSS sources for stability.
 - HTML seeds are best-effort and use `out/state-html.json` for change detection.
+- `filter.mode: keyword` (default) uses the legacy keyword/anchor matcher; no agent needed.

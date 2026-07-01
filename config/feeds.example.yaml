@@ -7,6 +7,19 @@ output:
   # NOTE: matching is content-based; reach `tags:` do NOT count. Set this to
   # false when enabling reach platforms or Chinese ones (36kr/weibo) vanish.
   # See docs/REACH.md.
+
+# Relevance filtering (see docs/FILTERING.md).
+# mode: keyword (default) uses the keyword/anchor matcher below (topics).
+# mode: llm  hands relevance judgment to a Clawdbot agent (semantic, cross-language)
+#            via a candidates→judgments→render hand-off — see SKILL.md.
+filter:
+  mode: keyword # keyword | llm | hybrid
+  model: claude-haiku-4-5 # model the agent uses to judge (llm/hybrid)
+  min_relevance: 0.5
+  max_text_len: 500
+  # profile: |
+  #   I care about agentic AI, LLM releases + evals, dev tooling, and the
+  #   OpenClaw/Clawdbot ecosystem. Not interested in crypto, ads, or celebrity news.
   max_per_topic: 8 # limit items shown under each topic section
 
 # Additive section: what's hot in the last 24h, chosen using your existing topics/entities as a profile.

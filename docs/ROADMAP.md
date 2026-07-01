@@ -21,8 +21,9 @@ Legend: `[x]` done · `[~]` partial · `[ ]` not started.
 
 ## Phase 2 — Quality
 
-- [x] De-duplication (URL canonicalization + similarity) (`src/dedup.js`)
+- [x] De-duplication (URL canonicalization + similarity) (`src/dedup.js`); keeps the richer duplicate
 - [x] Ranking improvements — weight × reliability, per-source caps, hard recency filter (`src/rank.js`, `src/filters.js`)
+- [x] AI relevance filtering — agent-judged semantic gate replacing keyword matching (`src/candidates.js`, `src/judgments.js`, `docs/FILTERING.md`); keyword mode kept as fallback
 - [ ] Summarization pipeline (top N only) — not integrated yet (renderer has the hook; no `summarize` call)
 - [~] Unit tests per adapter — core modules covered (rank, dedup, render, tagging, unfurl, recommend, rsshub, x); RSS / V2EX / YouTube / WeChat adapters still lack dedicated tests
 
