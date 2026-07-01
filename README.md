@@ -1,124 +1,109 @@
 # universal-feeds
 
-A **universal information feed aggregation framework** for **Clawdbot/OpenClaw**.
+English | [中文](README.zh-CN.md)
 
-Goal: fetch daily **Trending / 热搜 / Following** content from major US + Mainland China platforms (and anywhere else), normalize it into a consistent schema, then produce **ranked digests** (daily briefing, topic alerts, etc.).
+A feed aggregator for [Clawdbot/OpenClaw](https://github.com/jackwener/opencli).
+It pulls trending, hot-list, and following content from a range of US and China
+platforms, normalizes everything into one `FeedItem` schema, ranks and
+de-duplicates it, and writes a daily Markdown digest.
 
-Platforms in scope (phased):
-- X (via `bird`)
-- RSS / "Most popular" pages (US/CN mainstream media)
-- V2EX
-- YouTube
-- Weibo (hot search)
-- WeChat Official Accounts (via third-party hot lists / later: account-following if feasible)
-- TikTok (later)
+The hard part of a personal aggregator isn't ranking — it's reaching login-gated
+content across many platforms. universal-feeds handles the public sources
+directly and, for auth-gated ones, drives your real logged-in Chrome through
+OpenCLI's browser bridge (the "reach" layer) instead of juggling API tokens.
 
-> Note: "Following" feeds may require user authentication (OAuth/API tokens where possible; otherwise local cookies or browser relay). This project prioritizes **least privilege** and clear security boundaries.
+## What it does
 
-## What this repo will contain
-
-- A Clawdbot Skill (or a set of Skills) with pluggable **adapters** per platform
-- A unified **normalized item schema** (`FeedItem`)
-- A preference system (topics/entities/keywords) that compiles into platform-specific queries
-- Ranking + de-duplication
-- Summarization hooks (e.g. integrate `summarize` CLI)
-- Cron templates to deliver a daily report to messaging channels
+- **Sources** — X (via `bird` or reach), RSS packs, V2EX, YouTube, WeChat MP
+  albums natively; plus 15 auth-gated platforms through the reach layer: Twitter,
+  Reddit, Bilibili, Xiaohongshu, Facebook, Instagram, LinkedIn, Xueqiu, Weibo,
+  Hacker News, Product Hunt, 36Kr, Juejin, TikTok, Substack.
+- **One schema** — every source normalizes to `FeedItem` (see `docs/SCHEMA.md`),
+  so ranking, de-dup, and rendering don't care where an item came from.
+- **Two ways to filter** — a keyword/anchor matcher (default, zero-config), or
+  AI relevance judgment where a Clawdbot agent scores each item against a
+  natural-language interest profile (`filter.mode: llm`, see `docs/FILTERING.md`).
+- **Ranking** — engagement + recency + per-source weight/reliability, with
+  de-duplication that keeps the richer copy of a repeated URL.
+- **Output** — `out/items-YYYY-MM-DD.jsonl` and `out/digest-YYYY-MM-DD.md`.
 
 ## Status
 
-- **Stage:** usable CLI + skill entrypoint; actively iterating
-- **Dogfooding:** ran as a daily production digest (cron → iMessage delivery) from Feb 2026; X/RSS/V2EX/Weibo adapters exercised against live sources
-- **CI:** GitHub Actions runs unit tests + digest smoke test
-
-## Install
-
-```bash
-npm ci
-```
+Usable and dogfooded as a daily digest since early 2026. The reach layer is
+desktop-only (it reuses a running Chrome — see `docs/adr/0001-*.md`); CI runs the
+unit tests plus a digest smoke test. Public sources (RSS / YouTube / V2EX / HN /
+36Kr) need no login; the rest are opt-in once you're signed in.
 
 ## Quick start
 
-### Option A — Demo (topic filtering off)
+```bash
+npm ci
+cp config/feeds.example.yaml config/feeds.yaml   # then edit your preferences
+node bin/digest --config config/feeds.yaml --date today
+```
+
+That writes today's digest to `out/`. To try it without topic filtering:
 
 ```bash
 node bin/digest --config config/feeds.demo.yaml --date today
 ```
 
-`require_topic_match: false` avoids topic-filter empties, but output can still be empty if upstream sources are unreachable.
+Full setup — reach platforms, AI filtering, scheduled delivery — is in
+[`INSTALL.md`](INSTALL.md). Keeping it current is in [`UPDATE.md`](UPDATE.md).
 
-### Option B — Topic-only daily briefing (recommended)
-
-```bash
-cp config/feeds.example.yaml config/feeds.yaml
-node bin/digest --config config/feeds.yaml --date today
-```
-
-Outputs:
-- `out/items-YYYY-MM-DD.jsonl`
-- `out/digest-YYYY-MM-DD.md`
-
-Run tests:
+## Reach layer (auth-gated platforms)
 
 ```bash
-npm test
+node bin/digest reach doctor    # health of every channel
+node bin/digest reach watch     # compact health + update check (cron-friendly)
+node bin/digest reach fetch reddit "AI agents"   # one-off fetch → FeedItem JSONL
 ```
 
-X Following requires you to be logged into x.com in a local Chrome profile that `bird` can read.
+Requires OpenCLI and its Chrome extension, on a desktop where you're logged into
+the target sites. Details in [`docs/REACH.md`](docs/REACH.md).
 
 ## Configuration
 
-Configs are YAML. Start from:
-- `config/feeds.demo.yaml` — demo config (`require_topic_match: false`)
-- `config/feeds.example.yaml` — topic-only config (ship your real preferences here)
-
-A source entry supports optional quality knobs:
+Configs are YAML; start from `config/feeds.example.yaml`. A source entry takes
+optional quality knobs:
 
 ```yaml
 - name: OpenAI News
   url: https://openai.com/news/rss.xml
   type: rss
-  weight: 1.2        # ranking preference
-  reliability: 1.0   # 0..1 stability/trust
+  weight: 1.2 # ranking preference
+  reliability: 1.0 # 0..1 stability/trust
   tags: [ai, model-releases]
 ```
 
-## What the output looks like
+Enable an auth-gated platform per-source:
 
-Excerpt from `out/digest-YYYY-MM-DD.md`:
-
-```text
-## All Items (by platform)
-
-### Media (RSS)
-- [rss] ... (score 0.94)
-  https://...
-
-### YouTube
-- [youtube] ... (score 0.54)
-  https://...
+```yaml
+platforms:
+  reddit:
+    reach:
+      enabled: true
+      mode: search # feed | search | trending
+      query: 'AI agents'
+      tags: [ai]
 ```
 
-See `docs/EXAMPLES.md` for copy/paste recipes and `docs/SHOWCASE.md` for a contributor-oriented overview.
+## Docs
 
-## Quick links
+| Topic                | File                                           |
+| -------------------- | ---------------------------------------------- |
+| Install / setup      | [`INSTALL.md`](INSTALL.md)                     |
+| Update / maintenance | [`UPDATE.md`](UPDATE.md)                       |
+| Reach layer          | [`docs/REACH.md`](docs/REACH.md)               |
+| Relevance filtering  | [`docs/FILTERING.md`](docs/FILTERING.md)       |
+| Item schema          | [`docs/SCHEMA.md`](docs/SCHEMA.md)             |
+| Config reference     | [`docs/CONFIG.md`](docs/CONFIG.md)             |
+| Architecture         | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) |
+| Roadmap              | [`docs/ROADMAP.md`](docs/ROADMAP.md)           |
+| Decisions (ADRs)     | [`docs/adr/`](docs/adr/)                       |
 
-- Config reference: `docs/CONFIG.md`
-- Product doc: `docs/PRD.md`
-- Architecture: `docs/ARCHITECTURE.md`
-- Roadmap: `docs/ROADMAP.md`
-- Preferences spec: `docs/PREFERENCES.md`
-- Source seed list: `docs/SOURCES.md`
-- RSSHub notes: `docs/RSSHUB.md`
-- Recommendations: `docs/RECOMMENDED.md`
+## Contributing / Security / License
 
-## Contributing
-
-See [`CONTRIBUTING.md`](CONTRIBUTING.md) and the PR template.
-
-## Security
-
-See [`SECURITY.md`](SECURITY.md).
-
-## License
-
-MIT (see [`LICENSE`](LICENSE)).
+See [`CONTRIBUTING.md`](CONTRIBUTING.md), [`SECURITY.md`](SECURITY.md), and
+[`LICENSE`](LICENSE) (MIT). The reach layer is ported from
+[Agent-Reach](https://github.com/Panniantong/Agent-Reach) (MIT).
