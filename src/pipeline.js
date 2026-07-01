@@ -4,6 +4,9 @@ import { fetchXFollowing } from './sources/x_bird.js';
 import { fetchRssFromPacks } from './sources/rss.js';
 import { fetchV2exHot } from './sources/v2ex.js';
 import { fetchYouTubeFromPacks } from './sources/youtube.js';
+import { fetchViaReach } from './sources/reach.js';
+import { getAllChannels } from './reach/channels/index.js';
+import { ReachConfig } from './reach/config.js';
 import { dedupItems } from './dedup.js';
 import { filterXNoise } from './filters.js';
 import { unfurlUrl } from './unfurl.js';
@@ -21,7 +24,10 @@ export async function runDigest({ cfg, date, outDir }) {
   let items = [];
 
   // X — Following
-  if (cfg?.platforms?.x?.enabled && (cfg?.platforms?.x?.sources || []).includes('following')) {
+  if (
+    cfg?.platforms?.x?.enabled &&
+    (cfg?.platforms?.x?.sources || []).includes('following')
+  ) {
     const limit = cfg.platforms.x.following?.limit ?? 200;
     const mode = cfg.platforms.x.following?.mode ?? 'following';
     const timeoutMs = cfg.platforms.x.following?.timeout_ms ?? 60000;
@@ -30,23 +36,42 @@ export async function runDigest({ cfg, date, outDir }) {
   }
 
   // RSS packs
-  if (cfg?.platforms?.rss?.enabled && (cfg?.platforms?.rss?.sources || []).includes('trending')) {
+  if (
+    cfg?.platforms?.rss?.enabled &&
+    (cfg?.platforms?.rss?.sources || []).includes('trending')
+  ) {
     const packs = cfg.platforms.rss.packs || [];
     const cachePath = path.join(outDir, 'state-html.json');
-    const rssItems = await fetchRssFromPacks({ packs, fetchedAt, maxPerSource: 20, cachePath });
+    const rssItems = await fetchRssFromPacks({
+      packs,
+      fetchedAt,
+      maxPerSource: 20,
+      cachePath,
+    });
     items.push(...rssItems);
   }
 
   // WeChat MP album (best-effort)
   try {
     const wechatPackPath = 'sources/cn-wechat-hot.yaml';
-    const wechatPack = (await import('yaml')).default.parse(fs.readFileSync(wechatPackPath, 'utf8'));
-    const wechatSources = Array.isArray(wechatPack?.sources) ? wechatPack.sources : [];
-    const albumSources = wechatSources.filter((s) => s.type === 'html' && String(s.url || '').includes('mp/appmsgalbum'));
+    const wechatPack = (await import('yaml')).default.parse(
+      fs.readFileSync(wechatPackPath, 'utf8')
+    );
+    const wechatSources = Array.isArray(wechatPack?.sources)
+      ? wechatPack.sources
+      : [];
+    const albumSources = wechatSources.filter(
+      (s) => s.type === 'html' && String(s.url || '').includes('mp/appmsgalbum')
+    );
     if (albumSources.length) {
       const { fetchWeChatMpAlbum } = await import('./sources/wechat_mp.js');
       for (const s of albumSources) {
-        const ws = await fetchWeChatMpAlbum({ name: s.name, url: s.url, fetchedAt, limit: 30 });
+        const ws = await fetchWeChatMpAlbum({
+          name: s.name,
+          url: s.url,
+          fetchedAt,
+          limit: 30,
+        });
         // inherit tags
         for (const it of ws) {
           it.tags = Array.isArray(s.tags) ? s.tags : it.tags;
@@ -60,7 +85,10 @@ export async function runDigest({ cfg, date, outDir }) {
   }
 
   // V2EX hot
-  if (cfg?.platforms?.v2ex?.enabled && (cfg?.platforms?.v2ex?.sources || []).includes('trending')) {
+  if (
+    cfg?.platforms?.v2ex?.enabled &&
+    (cfg?.platforms?.v2ex?.sources || []).includes('trending')
+  ) {
     try {
       const v2 = await fetchV2exHot({ fetchedAt, limit: 30 });
       items.push(...v2);
@@ -70,10 +98,47 @@ export async function runDigest({ cfg, date, outDir }) {
   }
 
   // YouTube channel RSS
-  if (cfg?.platforms?.youtube?.enabled && (cfg?.platforms?.youtube?.sources || []).includes('trending')) {
+  if (
+    cfg?.platforms?.youtube?.enabled &&
+    (cfg?.platforms?.youtube?.sources || []).includes('trending')
+  ) {
     const packs = cfg.platforms.youtube.packs || [];
-    const yt = await fetchYouTubeFromPacks({ packs, fetchedAt, maxPerSource: 10 });
+    const yt = await fetchYouTubeFromPacks({
+      packs,
+      fetchedAt,
+      maxPerSource: 10,
+    });
     items.push(...yt);
+  }
+
+  // Reach layer — auth-gated platforms via OpenCLI browser bridge.
+  // Each channel is opt-in per config: platforms.<name>.reach.enabled = true.
+  // Best-effort: an unavailable channel warns and contributes nothing.
+  const reachChannels = getAllChannels().filter(
+    (ch) => cfg?.platforms?.[ch.name]?.reach?.enabled
+  );
+  if (reachChannels.length) {
+    const reachConfig = new ReachConfig();
+    for (const ch of reachChannels) {
+      const rc = cfg.platforms[ch.name].reach;
+      try {
+        const reachItems = await fetchViaReach({
+          platform: ch.name,
+          query: rc.query,
+          mode: rc.mode || 'auto',
+          limit: rc.limit,
+          config: reachConfig,
+          fetchedAt,
+        });
+        // Inherit config-declared tags so topic tagging/boosts still apply.
+        if (Array.isArray(rc.tags)) {
+          for (const it of reachItems) it.tags = rc.tags;
+        }
+        items.push(...reachItems);
+      } catch (e) {
+        console.error(`# reach: ${ch.name} failed: ${e?.message || e}`);
+      }
+    }
   }
 
   // De-noise + de-dup
@@ -107,12 +172,13 @@ export async function runDigest({ cfg, date, outDir }) {
   }
 
   const urlRe = /https?:\/\/\S+/gi;
-  const stripEff = (t) => String(t || '')
-    .replace(/https?:\/\/\S+/gi, ' ')
-    .replace(/@[A-Za-z0-9_]{1,30}/g, ' ')
-    .replace(/#[\p{L}\p{N}_]{2,}/gu, ' ')
-    .replace(/[\s\u200B]+/g, ' ')
-    .trim();
+  const stripEff = (t) =>
+    String(t || '')
+      .replace(/https?:\/\/\S+/gi, ' ')
+      .replace(/@[A-Za-z0-9_]{1,30}/g, ' ')
+      .replace(/#[\p{L}\p{N}_]{2,}/gu, ' ')
+      .replace(/[\s\u200B]+/g, ' ')
+      .trim();
 
   if (unfurlEnabled) {
     let did = 0;
@@ -143,14 +209,18 @@ export async function runDigest({ cfg, date, outDir }) {
           title: it.title || meta.title,
           debug: {
             ...(it.debug || {}),
-            unfurl: meta
-          }
+            unfurl: meta,
+          },
         };
       }
     }
 
     try {
-      fs.writeFileSync(cachePathUnfurl, JSON.stringify(unfurlCache, null, 2) + '\n', 'utf8');
+      fs.writeFileSync(
+        cachePathUnfurl,
+        JSON.stringify(unfurlCache, null, 2) + '\n',
+        'utf8'
+      );
     } catch {
       // ignore cache write
     }
@@ -165,7 +235,7 @@ export async function runDigest({ cfg, date, outDir }) {
   // - items: the main output, which may require topic match
   const cfgAll = {
     ...cfg,
-    output: { ...(cfg.output || {}), require_topic_match: false }
+    output: { ...(cfg.output || {}), require_topic_match: false },
   };
   const allTagged = tagAndScore(items, cfgAll);
   items = tagAndScore(items, cfg);
@@ -175,8 +245,10 @@ export async function runDigest({ cfg, date, outDir }) {
   // Retweet penalty (after topic boosts)
   const xCfg = cfg?.platforms?.x?.following || {};
   const includeRT = xCfg.include_retweets !== false;
-  const rtPenalty = typeof xCfg.retweet_penalty === 'number' ? xCfg.retweet_penalty : 1.0;
-  const maxRt = typeof xCfg.max_retweets === 'number' ? xCfg.max_retweets : Infinity;
+  const rtPenalty =
+    typeof xCfg.retweet_penalty === 'number' ? xCfg.retweet_penalty : 1.0;
+  const maxRt =
+    typeof xCfg.max_retweets === 'number' ? xCfg.max_retweets : Infinity;
   let rtCount = 0;
   items = items
     .filter((it) => {
@@ -204,7 +276,8 @@ export async function runDigest({ cfg, date, outDir }) {
 
   // Persist JSONL
   const itemsPath = path.join(outDir, `items-${date}.jsonl`);
-  const jsonl = items.map((x) => JSON.stringify(x)).join('\n') + (items.length ? '\n' : '');
+  const jsonl =
+    items.map((x) => JSON.stringify(x)).join('\n') + (items.length ? '\n' : '');
   fs.writeFileSync(itemsPath, jsonl, 'utf8');
 
   // Render digest

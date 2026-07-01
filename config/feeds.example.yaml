@@ -1,10 +1,10 @@
 output:
-  language: en           # default: en; optional: zh
+  language: en # default: en; optional: zh
   max_items: 30
-  summarize_top_n: 0     # MVP default: 0 (no summarization). Set >0 to enable later.
+  summarize_top_n: 0 # MVP default: 0 (no summarization). Set >0 to enable later.
   recency_hours: 24
-  require_topic_match: true    # if true, only keep items matching any topic
-  max_per_topic: 8             # limit items shown under each topic section
+  require_topic_match: true # if true, only keep items matching any topic
+  max_per_topic: 8 # limit items shown under each topic section
 
 # Additive section: what's hot in the last 24h, chosen using your existing topics/entities as a profile.
 recommended:
@@ -39,7 +39,7 @@ platforms:
     enabled: false
     sources: [following]
     following:
-      mode: following    # following | for_you
+      mode: following # following | for_you
       limit: 120
       timeout_ms: 60000
       min_effective_len: 20
@@ -49,14 +49,21 @@ platforms:
         max_per_run: 10
         timeout_ms: 8000
       include_retweets: true
-      max_retweets: 6            # cap RTs allowed in the final ranked list
-      retweet_penalty: 0.35      # multiply score for RTs (0..1)
-      min_text_len: 30           # drop ultra-short low-signal tweets
+      max_retweets: 6 # cap RTs allowed in the final ranked list
+      retweet_penalty: 0.35 # multiply score for RTs (0..1)
+      min_text_len: 30 # drop ultra-short low-signal tweets
 
   rss:
     enabled: true
     sources: [trending]
-    packs: ["sources/us-ai-labs.yaml", "sources/us-tech.yaml", "sources/us-general.yaml", "sources/cn-tech.yaml", "sources/cn-general.yaml"]
+    packs:
+      [
+        'sources/us-ai-labs.yaml',
+        'sources/us-tech.yaml',
+        'sources/us-general.yaml',
+        'sources/cn-tech.yaml',
+        'sources/cn-general.yaml',
+      ]
 
   v2ex:
     enabled: true
@@ -65,68 +72,180 @@ platforms:
   youtube:
     enabled: true
     sources: [trending]
-    packs: ["sources/youtube-ai-channels.yaml"]
+    packs: ['sources/youtube-ai-channels.yaml']
+
+  # Reach layer — auth-gated platforms via OpenCLI browser bridge (desktop-only).
+  # One-time setup + health check: see docs/REACH.md and `digest reach doctor`.
+  # Disabled by default; enable per platform once OpenCLI + the Chrome extension
+  # are installed and you are logged in.
+  reddit:
+    reach:
+      enabled: false
+      mode: search # feed (personalized/hot) | search | trending
+      query: 'AI agents'
+      limit: 30
+      tags: [ai, tech]
+  xiaohongshu:
+    reach:
+      enabled: false
+      mode: search
+      query: 'AI'
+      limit: 20
+      tags: [ai]
 
 # Default topics: keep MVP digest focused on agentic AI + OpenClaw.
 # Users can edit/replace this list.
 topics:
   - name: wechat-following
     match: any
-    source_pack_allow: ["sources/cn-wechat-hot.yaml"]
+    source_pack_allow: ['sources/cn-wechat-hot.yaml']
     # Only surface WeChat items from our explicit list
     boost: 1.05
 
   - name: openclaw
     match: any
-    keywords: ["OpenClaw", "Clawdbot", "Moltbot", "clawd bot", "clawd", "moltbook"]
+    keywords:
+      ['OpenClaw', 'Clawdbot', 'Moltbot', 'clawd bot', 'clawd', 'moltbook']
     # Reduce common noise from crypto/meme narratives
-    exclude_keywords: ["airdrop", "pump", "memecoin", "token", "ca:", "contract", "solana", "$clawd", "$molt", "launchpad"]
+    exclude_keywords:
+      [
+        'airdrop',
+        'pump',
+        'memecoin',
+        'token',
+        'ca:',
+        'contract',
+        'solana',
+        '$clawd',
+        '$molt',
+        'launchpad',
+      ]
     boost: 2.0
 
   - name: agentic-ai
     match: any
-    anchors: ["agent", "agents", "agentic"]
-    keywords: ["workflow", "tooling", "guardrails", "sandbox", "skills", "mcp", "function calling", "orchestration"]
-    exclude_keywords: ["airdrop", "pump", "memecoin", "token", "ca:", "contract"]
+    anchors: ['agent', 'agents', 'agentic']
+    keywords:
+      [
+        'workflow',
+        'tooling',
+        'guardrails',
+        'sandbox',
+        'skills',
+        'mcp',
+        'function calling',
+        'orchestration',
+      ]
+    exclude_keywords:
+      ['airdrop', 'pump', 'memecoin', 'token', 'ca:', 'contract']
     boost: 1.2
 
   - name: ai-model-releases-official
     match: any
     # Official sources only
-    source_pack_allow: ["sources/us-ai-labs.yaml"]
+    source_pack_allow: ['sources/us-ai-labs.yaml']
     source_name_allow:
       - OpenAI News
       - Google DeepMind Blog
       - Anthropic Claude Opus (landing)
       - Anthropic Claude Sonnet (landing)
       - Anthropic Claude Haiku (landing)
-    anchors: ["gpt", "claude", "gemini", "deepseek", "qwen", "llm", "model", "weights", "codex", "opus", "sonnet", "haiku"]
-    keywords: ["introducing", "system card", "release notes", "now available", "API", "preview", "beta", "benchmark", "SWE-bench", "OSWorld", "TerminalBench", "context window", "1m context"]
-    exclude_keywords: ["airdrop", "pump", "memecoin", "token", "ca:", "contract"]
+    anchors:
+      [
+        'gpt',
+        'claude',
+        'gemini',
+        'deepseek',
+        'qwen',
+        'llm',
+        'model',
+        'weights',
+        'codex',
+        'opus',
+        'sonnet',
+        'haiku',
+      ]
+    keywords:
+      [
+        'introducing',
+        'system card',
+        'release notes',
+        'now available',
+        'API',
+        'preview',
+        'beta',
+        'benchmark',
+        'SWE-bench',
+        'OSWorld',
+        'TerminalBench',
+        'context window',
+        '1m context',
+      ]
+    exclude_keywords:
+      ['airdrop', 'pump', 'memecoin', 'token', 'ca:', 'contract']
     boost: 1.35
 
   - name: ai-model-releases-community
     match: any
-    platform_allow: ["x"]
+    platform_allow: ['x']
     # Community discussion: allow x.com but keep it clean
-    allow_domains: ["x.com"]
-    anchors: ["gpt", "claude", "gemini", "deepseek", "qwen", "llm", "model", "weights", "codex", "opus", "sonnet", "haiku"]
-    keywords: ["system card", "release notes", "now available", "API", "preview", "beta", "benchmark", "SWE-bench", "OSWorld", "TerminalBench", "context window", "1m context"]
-    exclude_keywords: ["airdrop", "pump", "memecoin", "token", "ca:", "contract", "whitelist", "presale", "launchpad"]
+    allow_domains: ['x.com']
+    anchors:
+      [
+        'gpt',
+        'claude',
+        'gemini',
+        'deepseek',
+        'qwen',
+        'llm',
+        'model',
+        'weights',
+        'codex',
+        'opus',
+        'sonnet',
+        'haiku',
+      ]
+    keywords:
+      [
+        'system card',
+        'release notes',
+        'now available',
+        'API',
+        'preview',
+        'beta',
+        'benchmark',
+        'SWE-bench',
+        'OSWorld',
+        'TerminalBench',
+        'context window',
+        '1m context',
+      ]
+    exclude_keywords:
+      [
+        'airdrop',
+        'pump',
+        'memecoin',
+        'token',
+        'ca:',
+        'contract',
+        'whitelist',
+        'presale',
+        'launchpad',
+      ]
     boost: 1.05
 
 entities:
   # Example entity list (edit freely)
   - name: NVIDIA
-    aliases: ["nvidia", "nvda", "英伟达"]
+    aliases: ['nvidia', 'nvda', '英伟达']
     boost: 1.15
 
 rsshub:
   base_url: https://rsshub.app
 
 html_sources:
-  min_change_length: 30   # ignore tiny description tweaks
-  force_refresh_days: 7   # surface an unchanged HTML seed at least once every N days
+  min_change_length: 30 # ignore tiny description tweaks
+  force_refresh_days: 7 # surface an unchanged HTML seed at least once every N days
 
 sources:
   allow_domains: []

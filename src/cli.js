@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { loadConfig } from './config.js';
 import { runDigest } from './pipeline.js';
+import { runReachCommand } from './reach/cli.js';
 
 function parseArgs(argv) {
   const args = { config: 'config/feeds.yaml', date: 'today' };
@@ -20,16 +21,24 @@ function ymdInTz(d = new Date(), tz = 'Asia/Shanghai') {
     timeZone: tz,
     year: 'numeric',
     month: '2-digit',
-    day: '2-digit'
+    day: '2-digit',
   }).formatToParts(d);
   const get = (t) => parts.find((p) => p.type === t)?.value;
   return `${get('year')}-${get('month')}-${get('day')}`;
 }
 
 export async function main() {
+  // Subcommands: `digest reach <cmd>` manages the auth-gated fetch layer.
+  if (process.argv[2] === 'reach') {
+    await runReachCommand(process.argv.slice(3));
+    return;
+  }
+
   const args = parseArgs(process.argv);
   if (args.help) {
-    console.log(`Usage: universal-feeds --config <path> [--date today|YYYY-MM-DD]\n`);
+    console.log(
+      `Usage: universal-feeds --config <path> [--date today|YYYY-MM-DD]\n`
+    );
     console.log(`Tip: copy config/feeds.example.yaml to config/feeds.yaml`);
     return;
   }
