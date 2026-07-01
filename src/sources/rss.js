@@ -43,7 +43,15 @@ function canonicalizeUrl(u) {
   try {
     const url = new URL(u);
     // drop tracking params
-    const drop = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'ref', 'source'];
+    const drop = [
+      'utm_source',
+      'utm_medium',
+      'utm_campaign',
+      'utm_term',
+      'utm_content',
+      'ref',
+      'source',
+    ];
     for (const k of drop) url.searchParams.delete(k);
     return url.toString();
   } catch {
@@ -59,8 +67,9 @@ async function fetchText(url, timeoutMs = 8000) {
       redirect: 'follow',
       signal: ctrl.signal,
       headers: {
-        'user-agent': 'universal-feeds/0.1 (+https://github.com/ripplek/universal-feeds)'
-      }
+        'user-agent':
+          'universal-feeds/0.1 (+https://github.com/ripplek/universal-feeds)',
+      },
     });
     if (!res.ok) throw new Error(`fetch ${url} failed: ${res.status}`);
     return await res.text();
@@ -72,7 +81,10 @@ async function fetchText(url, timeoutMs = 8000) {
 import crypto from 'node:crypto';
 
 function sha1(s) {
-  return crypto.createHash('sha1').update(String(s || ''), 'utf8').digest('hex');
+  return crypto
+    .createHash('sha1')
+    .update(String(s || ''), 'utf8')
+    .digest('hex');
 }
 
 function loadState(cachePath) {
@@ -93,7 +105,14 @@ function saveState(cachePath, state) {
   }
 }
 
-export async function fetchRssFromPacks({ packs = [], fetchedAt, maxPerSource = 20, cachePath = null }) {
+export async function fetchRssFromPacks({
+  packs = [],
+  fetchedAt,
+  maxPerSource = 20,
+  cachePath = null,
+  rsshub = null,
+  htmlSources = null,
+}) {
   const items = [];
   const state = cachePath ? loadState(cachePath) : { html: {} };
 
@@ -107,7 +126,7 @@ export async function fetchRssFromPacks({ packs = [], fetchedAt, maxPerSource = 
       let url = s.url;
       if (!url && s.rsshub_route) {
         const { rsshubUrl } = await import('../rsshub.js');
-        url = rsshubUrl(globalThis.__UF_CFG || {}, s.rsshub_route);
+        url = rsshubUrl({ rsshub }, s.rsshub_route);
       }
       if (!url) continue;
 
@@ -136,26 +155,37 @@ export async function fetchRssFromPacks({ packs = [], fetchedAt, maxPerSource = 
           link = canonicalizeUrl(link);
 
           const guid = stripHtml(extractTag(block, 'guid') || '') || link;
-          const pub = stripHtml(extractTag(block, 'pubDate') || '') || stripHtml(extractTag(block, 'updated') || '') || stripHtml(extractTag(block, 'published') || '');
+          const pub =
+            stripHtml(extractTag(block, 'pubDate') || '') ||
+            stripHtml(extractTag(block, 'updated') || '') ||
+            stripHtml(extractTag(block, 'published') || '');
           const publishedAt = (() => {
             const d = new Date(pub);
             return isNaN(d) ? undefined : d.toISOString();
           })();
 
-          const descRaw = extractTag(block, 'description') || extractTag(block, 'summary') || '';
+          const descRaw =
+            extractTag(block, 'description') ||
+            extractTag(block, 'summary') ||
+            '';
           const text = stripHtml(descRaw).slice(0, 400);
 
           items.push({
             platform: 'rss',
             sourceType: 'trending',
-            source: { pack: packPath, name: s.name, weight: s.weight, reliability: s.reliability },
+            source: {
+              pack: packPath,
+              name: s.name,
+              weight: s.weight,
+              reliability: s.reliability,
+            },
             id: String(guid),
             url: link,
             title: title || undefined,
             text: text || undefined,
             publishedAt,
             fetchedAt,
-            tags: s.tags || undefined
+            tags: s.tags || undefined,
           });
         }
       } else if (s.type === 'html') {
@@ -169,16 +199,25 @@ export async function fetchRssFromPacks({ packs = [], fetchedAt, maxPerSource = 
         }
 
         const title = (() => {
-          const og = /<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["'][^>]*>/i.exec(html);
+          const og =
+            /<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["'][^>]*>/i.exec(
+              html
+            );
           if (og?.[1]) return stripHtml(og[1]);
           const t = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(html);
           return t?.[1] ? stripHtml(t[1]) : undefined;
         })();
 
         const desc = (() => {
-          const og = /<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["'][^>]*>/i.exec(html);
+          const og =
+            /<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["'][^>]*>/i.exec(
+              html
+            );
           if (og?.[1]) return stripHtml(og[1]);
-          const m = /<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["'][^>]*>/i.exec(html);
+          const m =
+            /<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["'][^>]*>/i.exec(
+              html
+            );
           return m?.[1] ? stripHtml(m[1]) : undefined;
         })();
 
@@ -187,12 +226,14 @@ export async function fetchRssFromPacks({ packs = [], fetchedAt, maxPerSource = 
         const prev = state.html?.[canonical];
 
         // Configurable change sensitivity
-        const minChangeLen = globalThis.__UF_CFG?.html_sources?.min_change_length ?? 0;
-        const forceDays = globalThis.__UF_CFG?.html_sources?.force_refresh_days ?? 0;
+        const minChangeLen = htmlSources?.min_change_length ?? 0;
+        const forceDays = htmlSources?.force_refresh_days ?? 0;
 
-        const isSmallChange = prev && prev.fingerprint !== fingerprint
-          ? Math.abs(((prev.desc || '').length - (desc || '').length)) < minChangeLen
-          : false;
+        const isSmallChange =
+          prev && prev.fingerprint !== fingerprint
+            ? Math.abs((prev.desc || '').length - (desc || '').length) <
+              minChangeLen
+            : false;
 
         let changed = !prev || prev.fingerprint !== fingerprint;
         if (changed && isSmallChange) changed = false;
@@ -209,23 +250,34 @@ export async function fetchRssFromPacks({ packs = [], fetchedAt, maxPerSource = 
 
         if (changed || forceRefresh) {
           state.html = state.html || {};
-          state.html[canonical] = { fingerprint, lastSeenAt: fetchedAt, title, desc };
+          state.html[canonical] = {
+            fingerprint,
+            lastSeenAt: fetchedAt,
+            title,
+            desc,
+          };
         }
 
         // Recency signal
-        const publishedAt = (changed || forceRefresh) ? fetchedAt : prev?.lastSeenAt;
+        const publishedAt =
+          changed || forceRefresh ? fetchedAt : prev?.lastSeenAt;
 
         items.push({
           platform: 'rss',
           sourceType: 'trending',
-          source: { pack: packPath, name: s.name, weight: s.weight, reliability: s.reliability },
+          source: {
+            pack: packPath,
+            name: s.name,
+            weight: s.weight,
+            reliability: s.reliability,
+          },
           id: String(url),
           url: canonical,
           title,
           text: desc,
           publishedAt,
           fetchedAt,
-          tags: s.tags || undefined
+          tags: s.tags || undefined,
         });
       }
     }

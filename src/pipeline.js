@@ -23,9 +23,6 @@ export async function runDigest({
   stage = 'full',
   judgmentsPath,
 }) {
-  // Make cfg available for adapters that need it (MVP shortcut; replace with explicit params later)
-  globalThis.__UF_CFG = cfg;
-
   const fetchedAt = new Date().toISOString();
 
   // Fetch every enabled source through one seam (see src/fetch_sources.js).
