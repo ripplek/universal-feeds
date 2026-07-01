@@ -99,7 +99,24 @@ in `src/reach/channels/index.js`.
 Fetching is **best-effort and health-gated**: if a channel's backend isn't ready
 (extension asleep beyond wake, session expired), the pipeline logs a `# reach:`
 warning and contributes nothing — the digest still renders. Check `reach doctor`
-when a platform goes quiet.
+when a platform goes quiet. `runOpenCli` retries once on an empty result to cover
+a cold browser-bridge call.
+
+### Overlap with RSS feeds (learned the hard way)
+
+A reach channel can fetch the **same URLs** an RSS feed already provides. Example:
+`sources/us-tech.yaml` includes the Hacker News RSS feed
+(`news.ycombinator.com/rss`), and the reach `hackernews` channel fetches the same
+front page. RSS items are pushed before reach items, so a naive first-wins dedup
+would silently drop every reach copy — the channel looks "empty" while actually
+being deduped away.
+
+`dedupItems` therefore keeps the **richer** of two duplicates (engagement
+metrics outrank text/date/author), not the first. The reach copy — which carries
+score/likes — now upgrades the bare RSS entry instead of being discarded. When a
+reach platform seems to contribute nothing, first check whether an RSS pack
+already covers the same URLs (`grep` the feed hosts) before suspecting the
+browser bridge.
 
 ## Attribution
 
