@@ -5,6 +5,10 @@ description: Generate a daily topic-based digest from multiple feeds (X Followin
 
 # universal-feeds (Clawdbot Skill)
 
+> This is the Clawdbot wrapper. The runtime-agnostic contract (CLI, `--json`
+> output, exit codes, the judging loop, and the MCP server) lives in
+> [`AGENTS.md`](../../AGENTS.md) — if the two disagree, `AGENTS.md` wins.
+
 This repo ships a digest pipeline that:
 
 - fetches items from multiple sources
@@ -114,7 +118,10 @@ three-step hand-off — you run the judging middle step:
    ```
 
    Writes `out/candidates-<date>.jsonl`, one compact item per line:
-   `{"id":"<platform:id>","platform":"…","title":"…","text":"…","url":"…"}`.
+   `{"id":"<platform:id>","platform":"…","title":"…","text":"…","url":"…"}`,
+   plus `out/judging-task-<date>.json` — a self-contained brief (profile, topic
+   whitelist, output schema, paths) you can judge from without re-reading this
+   file.
 
 2. **Judge each candidate** against the interest profile in `feeds.yaml`
    (`filter.profile`). **Use `claude-haiku-4-5`** for this bulk classification —
@@ -131,7 +138,8 @@ three-step hand-off — you run the judging middle step:
      about model releases is relevant to an English AI profile).
      Write all objects (JSONL or a JSON array) to `out/judgments-<date>.jsonl`.
 
-3. **Render** — run:
+3. **Render** — run (optionally dry-run `--validate-judgments <file>` first to
+   catch malformed / unknown-id / out-of-range judgments before rendering):
    ```bash
    node bin/digest --config config/feeds.yaml --judgments out/judgments-<date>.jsonl
    ```
