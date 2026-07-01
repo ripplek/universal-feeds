@@ -37,8 +37,9 @@ node bin/digest --config config/feeds.yaml --date today
 # → out/items-<date>.jsonl, out/digest-<date>.md
 ```
 
-Public sources (RSS, YouTube, V2EX, Hacker News, 36Kr) work with no further
+Public sources (RSS, V2EX, Hacker News, 36Kr) work with no further
 setup. `config/feeds.yaml` is git-ignored — it's your private config.
+(YouTube is served via the reach layer — desktop-only; see `docs/REACH.md`.)
 
 ### 4. Reach layer (optional, for auth-gated platforms)
 
@@ -141,8 +142,8 @@ node bin/digest --config config/feeds.yaml --date today
 # → out/items-<date>.jsonl、out/digest-<date>.md
 ```
 
-公开源（RSS、YouTube、V2EX、Hacker News、36 氪）不用再配。`config/feeds.yaml`
-已在 gitignore 里，是你的私有配置。
+公开源（RSS、V2EX、Hacker News、36 氪）不用再配。`config/feeds.yaml`
+已在 gitignore 里，是你的私有配置。（YouTube 走 reach 层，仅桌面端，见 `docs/REACH.md`。）
 
 ### 4. reach 层（可选，用于需登录的平台）
 

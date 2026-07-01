@@ -10,6 +10,7 @@ import { rankItems } from './rank.js';
 import { tagAndScore } from './tagging.js';
 import { pickRecommended } from './recommend.js';
 import { applyJudgments } from './judgments.js';
+import { candidateKey } from './candidates.js';
 import { trimByPlatform } from './trim.js';
 
 // items: post fetch/dedup/recency/enrich candidates.
@@ -45,7 +46,18 @@ export function assembleDigest({
     out = tagAndScore(out, cfg);
   }
 
-  const recommended = pickRecommended(allTagged, cfg);
+  let recommended = pickRecommended(allTagged, cfg);
+  // Carry the judge's translated titles into the recommended section too
+  // (output.translate), so the whole reader digest is single-language. Title-only
+  // graft — recommended keeps its own keyword-based selection and scoring.
+  if (judgeIndex) {
+    recommended = recommended.map((it) => {
+      const j = judgeIndex.get(candidateKey(it));
+      const tt =
+        typeof j?.title_translated === 'string' && j.title_translated.trim();
+      return tt ? { ...it, titleTranslated: tt.trim() } : it;
+    });
+  }
 
   for (const hook of postScore) out = hook(out, cfg);
   // Re-sort: boosts/penalties changed scores.

@@ -59,6 +59,13 @@ Judgment (one per candidate, produced by the agent):
 }
 ```
 
+When `output.translate: true`, the judging task also carries `target_language`
+and the judgment gains an optional `title_translated` — the title rendered in
+`output.language` (echoed unchanged if already in that language). It folds into
+this same pass; `applyJudgments` attaches it as `item.titleTranslated` and the
+reader view prefers it, so `digest-<date>.md` is single-language instead of a
+mix of English and Chinese headlines. Absent → the original title is used.
+
 `applyJudgments` (`src/judgments.js`) then:
 
 - drops items marked `relevant:false`, unjudged, or `score < filter.min_relevance`
@@ -72,6 +79,8 @@ Judgment (one per candidate, produced by the agent):
 
 ```yaml
 output:
+  language: zh # target language for translate
+  translate: true # unify digest titles into `language` (needs mode: llm/hybrid)
   require_topic_match: true # strict: drop items the agent didn't mark relevant
 filter:
   mode: llm # keyword | llm | hybrid

@@ -25,12 +25,12 @@ Legend: `[x]` done · `[~]` partial · `[ ]` not started.
 - [x] Ranking improvements — weight × reliability, per-source caps, hard recency filter (`src/rank.js`, `src/filters.js`)
 - [x] AI relevance filtering — agent-judged semantic gate replacing keyword matching (`src/candidates.js`, `src/judgments.js`, `docs/FILTERING.md`); keyword mode kept as fallback
 - [ ] Summarization pipeline (top N only) — not integrated yet (renderer has the hook; no `summarize` call)
-- [~] Unit tests per adapter — core modules covered (rank, dedup, render, tagging, unfurl, recommend, rsshub, x); RSS / V2EX / YouTube / WeChat adapters still lack dedicated tests
+- [~] Unit tests per adapter — core modules covered (rank, dedup, render, tagging, unfurl, recommend, rsshub, x, reach normalize incl. YouTube locale parsing); RSS / V2EX adapters still lack dedicated tests
 
 ## Phase 3 — CN platforms expansion
 
 - [x] Weibo adapter — via reach layer (`feed` + `hot`, OpenCLI); native `src/sources/weibo*` not needed
-- [~] WeChat adapter — album-only via `__biz` + `album` (`src/sources/wechat_mp.js`, sogou source list); no general third-party hot list yet
+- [ ] WeChat adapter — removed (album `__biz` fetch was low-value); revisit only if a reliable third-party feed appears
 - [x] Better zh/en topic handling (`src/tagging.js`)
 - [x] Xiaohongshu + Bilibili via reach layer (`src/reach/channels/`, OpenCLI)
 
@@ -53,7 +53,7 @@ Ported from Agent-Reach (MIT); depends on the OpenCLI browser bridge. Desktop-on
 
 ## Phase 4 — Short video platforms
 
-- [~] YouTube support — channel packs only (`src/sources/youtube.js`); playlists / transcripts not done
+- [x] YouTube support — via reach layer (`feed` + `search`, OpenCLI browser bridge); localized count/relative-time parsing in `src/reach/normalize.js`. Playlists / transcripts not done
 - [x] TikTok — via reach layer (`explore`, OpenCLI browser bridge)
 
 ## Phase 5 — Personalization

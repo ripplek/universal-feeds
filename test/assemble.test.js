@@ -127,3 +127,33 @@ test('returns a recommended array', () => {
   const { recommended } = assembleDigest({ items: [], cfg: cfg() });
   assert.ok(Array.isArray(recommended));
 });
+
+test('recommended items carry judge title_translated (output.translate)', () => {
+  const items = [
+    {
+      platform: 'rss',
+      id: 'r1',
+      url: 'https://x/1',
+      title: 'AI model launch',
+      publishedAt: '2026-07-01T00:00:00Z',
+    },
+  ];
+  const judgeIndex = indexJudgments([
+    {
+      id: 'rss:r1',
+      relevant: true,
+      score: 0.9,
+      title_translated: 'AI 模型发布',
+    },
+  ]);
+  // Topic keyword deliberately does NOT match the title, so the item lands in
+  // the additive recommended section (which excludes topic-matched items).
+  const c = cfg({
+    recommended: { enabled: true, max_items: 5, min_score: 0 },
+    topics: [{ name: 'zzz', match: 'any', keywords: ['zzz'] }],
+  });
+  const { recommended } = assembleDigest({ items, cfg: c, judgeIndex });
+  const hit = recommended.find((x) => x.url === 'https://x/1');
+  assert.ok(hit, 'item is recommended');
+  assert.equal(hit.titleTranslated, 'AI 模型发布');
+});

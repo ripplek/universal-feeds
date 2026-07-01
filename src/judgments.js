@@ -115,6 +115,13 @@ export function validateJudgments(
       );
       bad = true;
     }
+    if ('title_translated' in j && typeof j.title_translated !== 'string') {
+      counts.malformed++;
+      warnings.push(
+        `title_translated must be a string for ${id}: ${JSON.stringify(j.title_translated)}`
+      );
+      bad = true;
+    }
     if (bad) continue;
 
     counts.valid++;
@@ -190,7 +197,15 @@ export function applyJudgments(
       ? { ...(it.debug || {}), relevance: { score: rel, why: j.why } }
       : it.debug;
 
-    out.push({ ...it, tags, score, debug });
+    // Carry the judge's translated title (opt-in, output.translate) so the
+    // reader view can render a single-language digest. Absent → render falls
+    // back to the original title.
+    const next = { ...it, tags, score, debug };
+    const tt =
+      typeof j?.title_translated === 'string' && j.title_translated.trim();
+    if (tt) next.titleTranslated = j.title_translated.trim();
+
+    out.push(next);
   }
   return out.sort((a, b) => (b.score || 0) - (a.score || 0));
 }

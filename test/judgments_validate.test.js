@@ -79,3 +79,21 @@ test('formatValidationReport renders counts and an OK/FAIL header', () => {
   assert.ok(/judgments/.test(s));
   assert.ok(/valid/.test(s));
 });
+
+test('validateJudgments: valid string title_translated is fine', () => {
+  const r = validateJudgments(
+    [{ id: 'reddit:1', relevant: true, score: 0.9, title_translated: '标题' }],
+    { candidateIds, minRelevance: 0.5 }
+  );
+  assert.equal(r.counts.malformed, 0);
+  assert.equal(r.counts.valid, 1);
+});
+
+test('validateJudgments: non-string title_translated is malformed', () => {
+  const r = validateJudgments(
+    [{ id: 'reddit:1', relevant: true, score: 0.9, title_translated: 123 }],
+    { candidateIds, minRelevance: 0.5 }
+  );
+  assert.equal(r.ok, false);
+  assert.equal(r.counts.malformed, 1);
+});

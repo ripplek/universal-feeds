@@ -101,3 +101,31 @@ test('buildJudgingTask tolerates missing filter/topics', () => {
   assert.equal(typeof task.profile, 'string');
   assert.equal(task.min_relevance, 0.5);
 });
+
+test('buildJudgingTask omits translation by default', () => {
+  const task = buildJudgingTask({
+    cfg: { output: { language: 'zh' } }, // language set but translate off
+    date: '2026-07-01',
+    count: 1,
+    candidatesPath: 'out/c.jsonl',
+  });
+  assert.equal('target_language' in task, false);
+  assert.equal('title_translated' in task.judgment_schema.properties, false);
+  assert.ok(!/title_translated/.test(task.instructions));
+});
+
+test('buildJudgingTask adds translation contract when output.translate', () => {
+  const task = buildJudgingTask({
+    cfg: { output: { language: 'zh', translate: true } },
+    date: '2026-07-01',
+    count: 1,
+    candidatesPath: 'out/c.jsonl',
+  });
+  assert.equal(task.target_language, 'Chinese (Simplified)');
+  assert.ok(task.judgment_schema.properties.title_translated);
+  assert.equal(task.judgment_schema.properties.title_translated.type, 'string');
+  // Original schema is untouched (no shared-mutation leak).
+  assert.ok(task.judgment_schema.properties.id);
+  assert.ok(/title_translated/.test(task.instructions));
+  assert.ok(/Chinese/.test(task.instructions));
+});

@@ -19,7 +19,7 @@ a desktop machine with Chrome open and logged in.
   where Chrome is logged in; every OpenCLI-backed platform is available. Simplest
   path and the closest fit to how OpenCLI actually works.
 - **B — Split execution.** A headless server runs only tier-0 sources
-  (RSS / YouTube / V2EX / GitHub); OpenCLI platforms are marked "desktop-only"
+  (RSS / V2EX / GitHub); OpenCLI platforms are marked "desktop-only"
   and fetched opportunistically when the desktop is online. More moving parts,
   partial coverage on the server.
 - **C — Cookie extraction + plain HTTP.** Decrypt Chrome's cookie DB and inject

@@ -66,7 +66,7 @@ test('non-array fetch result is ignored', async () => {
 test('SOURCES registry has the expected ids in dedup order', () => {
   assert.deepEqual(
     SOURCES.map((s) => s.id),
-    ['x', 'rss', 'wechat', 'v2ex', 'youtube', 'reach']
+    ['x', 'rss', 'v2ex', 'reach']
   );
 });
 

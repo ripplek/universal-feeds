@@ -29,6 +29,21 @@ export const CHANNELS = [
     },
   },
   {
+    // youtube `feed` is the personalized homepage; `search` takes a topic query.
+    // Output columns (rank, title, channel, video_id, views, duration,
+    // published, url) are localized — normalize parses "10小时前"/"1.2万" forms.
+    name: 'youtube',
+    platform: 'youtube',
+    description: 'YouTube 视频',
+    tier: 1,
+    backends: ['OpenCLI'],
+    hosts: ['youtube.com', 'youtu.be'],
+    commands: {
+      feed: { cmd: 'feed', sourceType: 'trending' },
+      search: { cmd: 'search', sourceType: 'search' },
+    },
+  },
+  {
     name: 'reddit',
     platform: 'reddit',
     description: 'Reddit 帖子',

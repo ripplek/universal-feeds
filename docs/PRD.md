@@ -6,17 +6,17 @@ Users want a **single place** to get today’s most important content across mul
 
 - Trending / 热搜 (public, no login)
 - Following feeds (requires user’s own account binding)
-- Topic-based feeds (e.g. “AI model releases”, “OpenClaw updates”, “companies I hold”) 
+- Topic-based feeds (e.g. “AI model releases”, “OpenClaw updates”, “companies I hold”)
 
 The output should be a **daily briefing** (and optionally breaking alerts), delivered to the user via their messaging channel.
 
 ## 2. Goals
 
-1) Collect daily hot content from US + Mainland China mainstream platforms.
-2) Normalize results to a unified schema.
-3) Allow users to configure preferences (topics/entities/sources) and optional account binding.
-4) Produce ranked digests and summaries with citations/links.
-5) Ship as a **Clawdbot Skill** (self-hosted first), with pluggable adapters.
+1. Collect daily hot content from US + Mainland China mainstream platforms.
+2. Normalize results to a unified schema.
+3. Allow users to configure preferences (topics/entities/sources) and optional account binding.
+4. Produce ranked digests and summaries with citations/links.
+5. Ship as a **Clawdbot Skill** (self-hosted first), with pluggable adapters.
 
 ## 3. Non-goals (initially)
 
@@ -45,13 +45,16 @@ The output should be a **daily briefing** (and optionally breaking alerts), deli
 ## 6. Functional requirements
 
 ### 6.1 Sources
+
 Each platform adapter should support some subset of:
+
 - `trending` (Explore/热搜/most popular)
 - `following` (requires auth)
 - `search` (topic queries)
 - `item_detail` (fetch full text if feasible)
 
 ### 6.2 Preference system
+
 - Topics: keywords + aliases + intent
 - Entities: companies/products/people
 - Source filters: allow/block lists
@@ -59,7 +62,9 @@ Each platform adapter should support some subset of:
 - Recency window: today / 24h / 7d
 
 ### 6.3 Normalization
+
 All results return `FeedItem` with:
+
 - `platform`, `sourceType`
 - `id`, `url`
 - `author`, `title`, `text`
@@ -69,15 +74,18 @@ All results return `FeedItem` with:
 - `raw` (optional)
 
 ### 6.4 Ranking & de-dup
+
 - Basic ranking: engagement + recency + topic match score
 - De-dup: same URL, same canonical news story, or high similarity
 
 ### 6.5 Summarization
+
 - Per-item summary (optional)
 - Daily executive summary
 - Always include links/citations
 
 ### 6.6 Delivery
+
 - CLI output
 - Markdown report file
 - Optional send to messaging channel via Clawdbot
@@ -92,12 +100,14 @@ All results return `FeedItem` with:
 ## 8. MVP definition
 
 MVP adapters (recommended):
+
 - X via `bird` (search + following)
 - RSS/Most-popular pages for a curated list of US/CN media
 - V2EX hot topics
-- YouTube (channels + search)
+- YouTube (feed + search, via reach layer / OpenCLI)
 
 MVP outputs:
+
 - `out/digest-YYYY-MM-DD.md`
 - `out/items-YYYY-MM-DD.jsonl`
 

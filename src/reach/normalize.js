@@ -14,17 +14,25 @@
 import crypto from 'node:crypto';
 
 const FIELD_ALIASES = {
-  id: ['id', 'postId', 'bvid', 'note_id', 'pk'],
+  id: ['id', 'postId', 'bvid', 'note_id', 'pk', 'video_id', 'videoId'],
   url: ['url', 'link', 'permalink', 'url_overridden_by_dest'],
   // `name`/`word`/`topic` are last-resort titles (e.g. producthunt product name,
   // weibo hot-search term) — real `title` always wins.
   title: ['title', 'word', 'name', 'topic'],
   text: ['text', 'content', 'caption', 'selftext', 'brief', 'body', 'desc'],
-  authorName: ['author', 'user', 'screen_name', 'username', 'nickname'],
+  authorName: [
+    'author',
+    'user',
+    'screen_name',
+    'username',
+    'nickname',
+    'channel', // youtube feed/search
+  ],
   publishedAt: [
     'created_at',
     'created_utc',
     'published_at',
+    'published', // youtube feed/search (relative, e.g. "10小时前")
     'posted_at',
     'publishedAt',
     'createTime',
@@ -62,14 +70,69 @@ function pick(row, aliases) {
   return undefined;
 }
 
+// Suffix multipliers on counts: Chinese 万/亿 and western K/M/B (YouTube/Bilibili
+// emit localized, human-formatted counts like "1.2万次观看" or "1.7M views").
+const COUNT_MULTIPLIER = {
+  万: 1e4,
+  亿: 1e8,
+  億: 1e8,
+  k: 1e3,
+  m: 1e6,
+  b: 1e9,
+};
+
 function toNum(v) {
   if (v === undefined || v === null || v === '') return undefined;
-  const n =
-    typeof v === 'number' ? v : Number(String(v).replace(/[,_\s]/g, ''));
-  return Number.isFinite(n) ? n : undefined;
+  if (typeof v === 'number') return Number.isFinite(v) ? v : undefined;
+  // Leading number (with grouping separators) + optional unit; trailing prose
+  // ("次观看", "views") is ignored.
+  const m = /(-?\d[\d,._]*)\s*(万|亿|億|[kmb])?/i.exec(String(v));
+  if (!m) return undefined;
+  const base = Number(m[1].replace(/[,_\s]/g, ''));
+  if (!Number.isFinite(base)) return undefined;
+  const mult = m[2] ? COUNT_MULTIPLIER[m[2].toLowerCase()] || 1 : 1;
+  return base * mult;
 }
 
-function toIso(v) {
+// Relative timestamps ("10小时前", "2 hours ago") → absolute, anchored to `refMs`
+// (the fetch time). Month/year are approximate (30/365 days) — good enough for
+// recency-weighted ranking, not for display precision.
+const REL_UNIT_MS = {
+  秒: 1e3,
+  分钟: 6e4,
+  分: 6e4,
+  小时: 36e5,
+  天: 864e5,
+  日: 864e5,
+  周: 6048e5,
+  个月: 2592e6,
+  月: 2592e6,
+  年: 31536e6,
+  second: 1e3,
+  minute: 6e4,
+  hour: 36e5,
+  day: 864e5,
+  week: 6048e5,
+  month: 2592e6,
+  year: 31536e6,
+};
+
+function parseRelative(v, refMs) {
+  if (!Number.isFinite(refMs)) return undefined;
+  const s = String(v).trim();
+  const zh = /(\d+)\s*(秒|分钟|分|小时|天|日|周|个月|月|年)前/.exec(s);
+  const en = /(\d+)\s*(second|minute|hour|day|week|month|year)s?\s+ago/i.exec(
+    s
+  );
+  const m = zh || en;
+  if (!m) return undefined;
+  const unit = REL_UNIT_MS[zh ? m[2] : m[2].toLowerCase()];
+  if (!unit) return undefined;
+  const d = new Date(refMs - Number(m[1]) * unit);
+  return isNaN(d) ? undefined : d.toISOString();
+}
+
+function toIso(v, refMs) {
   if (v === undefined || v === null || v === '') return undefined;
   // UNIX epoch (some adapters emit created_utc in seconds, some in ms).
   const asNum =
@@ -80,7 +143,9 @@ function toIso(v) {
     return isNaN(d) ? undefined : d.toISOString();
   }
   const d = new Date(v);
-  return isNaN(d) ? undefined : d.toISOString();
+  if (!isNaN(d)) return d.toISOString();
+  // Localized/relative forms (YouTube: "10小时前") anchored to the fetch time.
+  return parseRelative(v, refMs);
 }
 
 function strip(s) {
@@ -114,6 +179,7 @@ export function normalizeRow(
   const id =
     rawId !== undefined ? String(rawId) : hashId(platform, url, title || text);
 
+  const refMs = fetchedAt ? Date.parse(fetchedAt) : Date.now();
   const authorName = pick(row, FIELD_ALIASES.authorName);
   const metrics = {
     like: toNum(pick(row, FIELD_ALIASES.like)),
@@ -130,7 +196,10 @@ export function normalizeRow(
     url: url ? String(url) : undefined,
     title,
     text,
-    publishedAt: toIso(pick(row, FIELD_ALIASES.publishedAt)),
+    publishedAt: toIso(
+      pick(row, FIELD_ALIASES.publishedAt),
+      Number.isFinite(refMs) ? refMs : undefined
+    ),
     fetchedAt,
   };
   if (source) item.source = source;

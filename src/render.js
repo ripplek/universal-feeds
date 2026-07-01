@@ -1,3 +1,5 @@
+import { decodeEntities } from './text.js';
+
 function h(cfg, en, zh) {
   return cfg?.output?.language === 'zh' ? zh : en;
 }
@@ -37,16 +39,16 @@ function fmtItem(item, cfg) {
 
 function topicLabel(cfg, name) {
   const mapEn = {
-    'wechat-following': 'WeChat (following)',
     openclaw: 'OpenClaw / Clawdbot',
+    'ai-model-releases': 'AI model releases',
     'ai-model-releases-official': 'AI model releases (official)',
     'ai-model-releases-community': 'AI model releases (community)',
     'agentic-ai': 'Agentic AI / workflows',
     'entities-news': 'Entities / companies',
   };
   const mapZh = {
-    'wechat-following': '微信公众号（关注）',
     openclaw: 'OpenClaw / Clawdbot 动态',
+    'ai-model-releases': 'AI 模型发布/更新',
     'ai-model-releases-official': 'AI 模型发布/更新（官方）',
     'ai-model-releases-community': 'AI 模型发布/更新（社区）',
     'agentic-ai': 'Agentic AI / 工作流',
@@ -76,6 +78,142 @@ function capPerSource(items, { maxPerSource = 0 } = {}) {
     out.push(it);
   }
   return out;
+}
+
+// Human-readable platform label for the reader view (the inspection view keeps
+// its own platform list, which also drives grouping order).
+function platformLabel(cfg, platform) {
+  const map = {
+    x: h(cfg, 'X', 'X'),
+    rss: h(cfg, 'RSS', 'RSS'),
+    v2ex: 'V2EX',
+    youtube: 'YouTube',
+    reddit: 'Reddit',
+    hackernews: 'Hacker News',
+    bilibili: 'Bilibili',
+    weibo: h(cfg, 'Weibo', '微博'),
+    xiaohongshu: h(cfg, 'Xiaohongshu', '小红书'),
+    tiktok: 'TikTok',
+    instagram: 'Instagram',
+    facebook: 'Facebook',
+    linkedin: 'LinkedIn',
+    xueqiu: h(cfg, 'Xueqiu', '雪球'),
+    producthunt: 'Product Hunt',
+    '36kr': h(cfg, '36Kr', '36氪'),
+    juejin: h(cfg, 'Juejin', '掘金'),
+    substack: 'Substack',
+  };
+  return map[platform] || platform || '';
+}
+
+// Absolute publish date (YYYY-MM-DD) for the reader view, or '' when unknown —
+// never fabricate a time for undated items.
+function readerDate(iso) {
+  const t = Date.parse(iso || '');
+  if (!Number.isFinite(t)) return '';
+  return new Date(t).toISOString().slice(0, 10);
+}
+
+function readerTime(iso) {
+  const t = Date.parse(iso || '');
+  if (!Number.isFinite(t)) return iso || '';
+  return new Date(t).toISOString().slice(0, 16).replace('T', ' ') + ' UTC';
+}
+
+// Decode HTML entities and drop internal source annotations like
+// `（公众号合集，__biz+album）` that leak in through some feed titles.
+function readerText(s) {
+  const decoded = decodeEntities((s || '').trim());
+  return decoded
+    .replace(/[（(][^（）()]*(?:__biz|公众号合集)[^（）()]*[）)]/g, '')
+    .trim();
+}
+
+function fmtReaderItem(item, cfg) {
+  // Prefer the judge's translated title (output.translate) so the reader digest
+  // is single-language; fall back to the original when absent.
+  const title = readerText(item.titleTranslated || item.title);
+  const text = readerText(item.text);
+  const head = title || (text ? text.slice(0, 140) : '(no title)');
+  const author = item.author?.handle || item.author?.name;
+  const meta = [platformLabel(cfg, item.platform), readerDate(item.publishedAt)]
+    .filter(Boolean)
+    .join(', ');
+  const link = item?.debug?.unfurl?.finalUrl || item.url;
+  return `- ${head}${author ? ` — ${readerText(author)}` : ''}${meta ? ` (${meta})` : ''}\n  ${link}`;
+}
+
+// Reader-facing digest: clean, deduplicated, organized by topic. Distinct from
+// renderDigestMarkdown (the inspection view) — no scores, tag lists, keyword
+// hits, coverage counts, or platform dump. Same pure (items, cfg) → Markdown
+// contract, so it's exercised the same way as the inspection renderer.
+export function renderReaderDigest(
+  items,
+  { cfg, date, fetchedAt, recommended = [] }
+) {
+  const title = h(cfg, `Daily Digest — ${date}`, `每日简报 — ${date}`);
+  const genLabel = h(cfg, 'Generated', '生成时间');
+  let md = `# ${title}\n\n${genLabel}: ${readerTime(fetchedAt)}\n\n`;
+
+  const topics = Array.isArray(cfg?.topics) ? cfg.topics : [];
+  const topicNames = topics.map((t) => t.name).filter(Boolean);
+  const perTopic = cfg?.output?.max_per_topic || 8;
+  const ENT_TOPIC = 'entities-news';
+
+  // Assign each item to a single primary topic (first configured topic it hits,
+  // in declaration order). Items with no topic but an entity match fall to the
+  // entities group; items with neither are noise and never reach the reader.
+  const groups = new Map();
+  for (const n of topicNames) groups.set(n, []);
+  const entityItems = [];
+  for (const it of Array.isArray(items) ? items : []) {
+    const tags = it.tags || [];
+    const primary = topicNames.find((n) => tags.includes(n));
+    if (primary) {
+      groups.get(primary).push(it);
+      continue;
+    }
+    const hasEntity =
+      tags.includes(ENT_TOPIC) ||
+      tags.some((t) => typeof t === 'string' && t.startsWith('entity:'));
+    if (hasEntity) entityItems.push(it);
+  }
+
+  const sections = [];
+  for (const n of topicNames) {
+    const g = groups.get(n).slice(0, perTopic);
+    if (g.length) sections.push({ label: topicLabel(cfg, n), items: g });
+  }
+  if (entityItems.length) {
+    sections.push({
+      label: topicLabel(cfg, ENT_TOPIC),
+      items: entityItems.slice(0, perTopic),
+    });
+  }
+
+  const renderedUrls = new Set();
+  for (const s of sections) {
+    md += `## ${s.label}\n\n`;
+    for (const it of s.items) {
+      md += fmtReaderItem(it, cfg) + '\n';
+      if (it.url) renderedUrls.add(it.url);
+    }
+    md += `\n`;
+  }
+  if (!sections.length) {
+    md += h(cfg, '_No items today._\n\n', '_今日暂无内容。_\n\n');
+  }
+
+  const recEnabled = cfg?.recommended?.enabled !== false;
+  if (recEnabled && Array.isArray(recommended) && recommended.length) {
+    const rec = recommended.filter((it) => it.url && !renderedUrls.has(it.url));
+    if (rec.length) {
+      md += `## ${h(cfg, 'Recommended (24h)', '推荐（24h）')}\n\n`;
+      md += rec.map((it) => fmtReaderItem(it, cfg)).join('\n') + '\n';
+    }
+  }
+
+  return md;
 }
 
 export function renderDigestMarkdown(

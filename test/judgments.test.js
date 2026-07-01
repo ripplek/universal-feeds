@@ -86,3 +86,25 @@ test('applyJudgments sorts by score desc', () => {
     ['hackernews', '36kr', 'reddit']
   );
 });
+
+test('applyJudgments attaches trimmed title_translated → titleTranslated', () => {
+  const idx = indexJudgments([
+    {
+      id: '36kr:3',
+      relevant: true,
+      score: 0.8,
+      topics: ['ai'],
+      title_translated: '  Translated headline  ',
+    },
+    // reddit:1 judged relevant but without a translation
+    { id: 'reddit:1', relevant: true, score: 0.8 },
+  ]);
+  const out = applyJudgments(items, idx, {
+    minRelevance: 0.5,
+    requireRelevant: true,
+  });
+  const cn = out.find((x) => x.platform === '36kr');
+  const rd = out.find((x) => x.platform === 'reddit');
+  assert.equal(cn.titleTranslated, 'Translated headline'); // trimmed
+  assert.equal('titleTranslated' in rd, false); // absent → not set
+});

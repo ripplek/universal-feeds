@@ -16,33 +16,41 @@ Preferences (YAML/JSON)
 ## Components
 
 ### 1) Adapters
+
 - `adapters/x_bird.*`
 - `adapters/rss.*` (or `src/sources/rss.js` in early MVP)
 - `adapters/v2ex.*` (or `src/sources/v2ex.js` in early MVP)
-- `adapters/youtube.*` (or `src/sources/youtube.js` in early MVP)
+- YouTube — via the reach layer (OpenCLI browser bridge); see `src/reach/`
 - (later) `adapters/weibo.*`, `adapters/wechat_hot.*`, `adapters/tiktok.*`
 
 Adapters should expose a small interface:
+
 - `fetchTrending(params)`
 - `fetchFollowing(params)`
 - `search(params)`
 
 ### 2) Normalization layer
+
 Converts platform responses into a unified `FeedItem` structure.
 
 ### 3) Ranking
+
 Inputs:
+
 - topic match score
 - recency
 - engagement (if available)
 - source reliability weight (configurable)
 
 ### 4) Summarization
+
 Two-stage recommended to control cost:
-1) cheap extraction (title + lead + bullets)
-2) optional LLM summary for top N items only
+
+1. cheap extraction (title + lead + bullets)
+2. optional LLM summary for top N items only
 
 ### 5) Storage
+
 - Raw pull logs: `out/raw/<platform>/...` (optional)
 - Normalized items: `out/items-YYYY-MM-DD.jsonl`
 - Digest: `out/digest-YYYY-MM-DD.md`
