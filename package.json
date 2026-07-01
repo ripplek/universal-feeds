@@ -9,9 +9,17 @@
   },
   "type": "module",
   "scripts": {
-    "test": "node --test && node bin/digest --config config/feeds.ci.yaml --date today"
+    "test:unit": "node --test",
+    "test:smoke": "node bin/digest --config config/feeds.ci.yaml --date today",
+    "test": "npm run test:unit && npm run test:smoke",
+    "prepare": "husky"
   },
   "dependencies": {
     "yaml": "^2.8.1"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "prettier": "^3.9.4"
   }
 }
