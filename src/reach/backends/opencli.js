@@ -188,6 +188,7 @@ export async function runOpenCli({
   limit,
   extraArgs = [],
   timeoutMs = 60000,
+  retries = 1, // browser bridge occasionally returns empty on a cold call
   exec = makeExecOpenCli(),
 }) {
   const args = [platform, cmd];
@@ -195,14 +196,21 @@ export async function runOpenCli({
   if (limit != null) args.push('--limit', String(limit));
   args.push(...extraArgs, '-f', 'yaml');
 
-  const { stdout } = await exec(args, { timeoutMs });
-  let parsed;
-  try {
-    parsed = YAML.parse(stdout);
-  } catch (e) {
-    throw new Error(
-      `opencli ${platform} ${cmd}: output not YAML: ${e?.message || e}`
-    );
+  let rows = [];
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const { stdout } = await exec(args, { timeoutMs });
+    let parsed;
+    try {
+      parsed = YAML.parse(stdout);
+    } catch (e) {
+      // Malformed output is a real error, not a cold-call empty — don't retry.
+      throw new Error(
+        `opencli ${platform} ${cmd}: output not YAML: ${e?.message || e}`
+      );
+    }
+    rows = coerceRows(parsed);
+    if (rows.length) return rows;
+    // empty → the extension worker may have been asleep; retry wakes it.
   }
-  return coerceRows(parsed);
+  return rows;
 }

@@ -122,6 +122,35 @@ test('runOpenCli parses YAML rows', async () => {
   assert.equal(rows[0].title, 'A');
 });
 
+test('runOpenCli retries once on empty then returns rows', async () => {
+  let n = 0;
+  const exec = async () => {
+    n += 1;
+    return n === 1
+      ? { stdout: '[]', stderr: '' }
+      : { stdout: '- title: A\n  url: https://a/1\n', stderr: '' };
+  };
+  const rows = await runOpenCli({ platform: 'reddit', cmd: 'home', exec });
+  assert.equal(n, 2);
+  assert.equal(rows.length, 1);
+});
+
+test('runOpenCli returns [] after exhausting retries on persistent empty', async () => {
+  let n = 0;
+  const exec = async () => {
+    n += 1;
+    return { stdout: '[]', stderr: '' };
+  };
+  const rows = await runOpenCli({
+    platform: 'reddit',
+    cmd: 'home',
+    retries: 2,
+    exec,
+  });
+  assert.equal(n, 3);
+  assert.deepEqual(rows, []);
+});
+
 test('runOpenCli throws on non-YAML output', async () => {
   const exec = async () => ({ stdout: ':\n:::not yaml:::\n  - [', stderr: '' });
   await assert.rejects(

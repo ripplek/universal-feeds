@@ -50,9 +50,10 @@ test('feed mode uses the feed command with no query', async () => {
 
 test('auto mode: query present → search, absent → feed', async () => {
   const calls = [];
+  // Non-empty output so runOpenCli does not retry (which would double calls).
   const exec = async (args) => {
     calls.push(args);
-    return { stdout: '[]', stderr: '' };
+    return { stdout: '- title: t\n  url: https://x/1\n', stderr: '' };
   };
   await fetchViaReach({
     platform: 'bilibili',

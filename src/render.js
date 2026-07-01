@@ -8,7 +8,9 @@ function fmtItem(item, cfg) {
   const head = title || (text ? text.slice(0, 140) : '(no text)');
   const author = item.author?.handle || item.author?.name;
   const score = typeof item.score === 'number' ? item.score.toFixed(2) : '';
-  const tags = (item.tags || []).length ? ` [${(item.tags || []).join(', ')}]` : '';
+  const tags = (item.tags || []).length
+    ? ` [${(item.tags || []).join(', ')}]`
+    : '';
   const plat = item.platform ? `${item.platform}` : '';
 
   let hit = '';
@@ -21,9 +23,10 @@ function fmtItem(item, cfg) {
     }
     const unique = [...new Set(flat)].slice(0, 3);
     if (unique.length) {
-      hit = cfg?.output?.language === 'zh'
-        ? `（命中: ${unique.join(' / ')}）`
-        : ` (hits: ${unique.join(' / ')})`;
+      hit =
+        cfg?.output?.language === 'zh'
+          ? `（命中: ${unique.join(' / ')}）`
+          : ` (hits: ${unique.join(' / ')})`;
     }
   }
 
@@ -39,7 +42,7 @@ function topicLabel(cfg, name) {
     'ai-model-releases-official': 'AI model releases (official)',
     'ai-model-releases-community': 'AI model releases (community)',
     'agentic-ai': 'Agentic AI / workflows',
-    'entities-news': 'Entities / companies'
+    'entities-news': 'Entities / companies',
   };
   const mapZh = {
     'wechat-following': '微信公众号（关注）',
@@ -47,7 +50,7 @@ function topicLabel(cfg, name) {
     'ai-model-releases-official': 'AI 模型发布/更新（官方）',
     'ai-model-releases-community': 'AI 模型发布/更新（社区）',
     'agentic-ai': 'Agentic AI / 工作流',
-    'entities-news': '实体 / 公司'
+    'entities-news': '实体 / 公司',
   };
   const m = cfg?.output?.language === 'zh' ? mapZh : mapEn;
   return m[name] || name;
@@ -60,7 +63,13 @@ function capPerSource(items, { maxPerSource = 0 } = {}) {
   const counts = new Map();
   const out = [];
   for (const it of items) {
-    const key = it?.source?.name || it?.source?.pack || it?.author?.handle || it?.author?.name || it?.platform || 'unknown';
+    const key =
+      it?.source?.name ||
+      it?.source?.pack ||
+      it?.author?.handle ||
+      it?.author?.name ||
+      it?.platform ||
+      'unknown';
     const c = counts.get(key) || 0;
     if (c >= n) continue;
     counts.set(key, c + 1);
@@ -69,7 +78,10 @@ function capPerSource(items, { maxPerSource = 0 } = {}) {
   return out;
 }
 
-export function renderDigestMarkdown(items, { cfg, date, fetchedAt, recommended = [] }) {
+export function renderDigestMarkdown(
+  items,
+  { cfg, date, fetchedAt, recommended = [] }
+) {
   const title = h(cfg, `Daily Digest — ${date}`, `每日简报 — ${date}`);
   const subtitle = h(cfg, `Fetched at: ${fetchedAt}`, `抓取时间：${fetchedAt}`);
 
@@ -79,7 +91,11 @@ export function renderDigestMarkdown(items, { cfg, date, fetchedAt, recommended 
   const sectionHighlights = h(cfg, 'Topic highlights', '主题要点');
   const requireTopic = cfg?.output?.require_topic_match === true;
   const sectionAll = requireTopic
-    ? h(cfg, 'All matched items (topic-only view)', '全部命中条目（仅主题视图）')
+    ? h(
+        cfg,
+        'All matched items (topic-only view)',
+        '全部命中条目（仅主题视图）'
+      )
     : h(cfg, 'All Items (by platform)', '全部条目（按平台）');
 
   let md = `# ${title}\n\n${subtitle}\n\n`;
@@ -141,7 +157,9 @@ export function renderDigestMarkdown(items, { cfg, date, fetchedAt, recommended 
     // Highlights (cheap extractive bullets)
     md += `## ${sectionHighlights}\n\n`;
     for (const [name, groupedAll] of groupedByTopic.entries()) {
-      const top = capPerSource(groupedAll, { maxPerSource: maxPerSourcePerTopic }).slice(0, 2);
+      const top = capPerSource(groupedAll, {
+        maxPerSource: maxPerSourcePerTopic,
+      }).slice(0, 2);
       if (!top.length) continue;
       md += `- ${topicLabel(cfg, name)}\n`;
       for (const it of top) {
@@ -194,7 +212,22 @@ export function renderDigestMarkdown(items, { cfg, date, fetchedAt, recommended 
     ['x', h(cfg, 'X (Following)', 'X（关注）')],
     ['rss', h(cfg, 'Media (RSS)', '媒体（RSS）')],
     ['v2ex', 'V2EX'],
-    ['youtube', 'YouTube']
+    ['youtube', 'YouTube'],
+    // Reach-layer platforms (OpenCLI browser bridge).
+    ['reddit', 'Reddit'],
+    ['hackernews', 'Hacker News'],
+    ['bilibili', 'Bilibili'],
+    ['weibo', h(cfg, 'Weibo', '微博')],
+    ['xiaohongshu', h(cfg, 'Xiaohongshu', '小红书')],
+    ['tiktok', 'TikTok'],
+    ['instagram', 'Instagram'],
+    ['facebook', 'Facebook'],
+    ['linkedin', 'LinkedIn'],
+    ['xueqiu', h(cfg, 'Xueqiu', '雪球')],
+    ['producthunt', 'Product Hunt'],
+    ['36kr', h(cfg, '36Kr', '36氪')],
+    ['juejin', h(cfg, 'Juejin', '掘金')],
+    ['substack', 'Substack'],
   ];
 
   for (const [p, label] of platforms) {
