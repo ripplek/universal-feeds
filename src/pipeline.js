@@ -15,7 +15,7 @@ import {
 } from './candidates.js';
 import { parseJudgments, indexJudgments } from './judgments.js';
 import { assembleDigest } from './assemble.js';
-import { renderDigestMarkdown } from './render.js';
+import { renderDigestMarkdown, renderReaderDigest } from './render.js';
 
 // Fetch + de-noise + de-dup + recency filter — the prefix every stage shares.
 // `sources` is injectable (defaults to the SOURCES registry) for tests. This is
@@ -115,16 +115,27 @@ export async function renderFromItems({
     (outItems.length ? '\n' : '');
   fs.writeFileSync(itemsPath, jsonl, 'utf8');
 
+  // Reader view is the deliverable users (and cron) open at digest-<date>.md.
   const digestPath = path.join(outDir, `digest-${date}.md`);
-  const md = renderDigestMarkdown(outItems, {
+  const readerMd = renderReaderDigest(outItems, {
     cfg,
     date,
     fetchedAt,
     recommended,
   });
-  fs.writeFileSync(digestPath, md, 'utf8');
+  fs.writeFileSync(digestPath, readerMd, 'utf8');
 
-  return { itemsPath, digestPath, count: outItems.length };
+  // Inspection view keeps the full ranking/tag/hit detail for debugging + agents.
+  const inspectionPath = path.join(outDir, `digest-inspection-${date}.md`);
+  const inspectionMd = renderDigestMarkdown(outItems, {
+    cfg,
+    date,
+    fetchedAt,
+    recommended,
+  });
+  fs.writeFileSync(inspectionPath, inspectionMd, 'utf8');
+
+  return { itemsPath, digestPath, inspectionPath, count: outItems.length };
 }
 
 export async function runDigest({

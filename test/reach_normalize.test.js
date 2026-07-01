@@ -214,6 +214,51 @@ test('tiktok explore row (desc→text, createTime→ISO, shares→repost)', () =
   assert.match(it.publishedAt, /^2026-/);
 });
 
+test('youtube search row (channel→author, video_id→id, localized views + relative date)', () => {
+  const fetchedAt = '2026-07-01T12:00:00.000Z';
+  const row = {
+    rank: 1,
+    title: 'Claude Sonnet 5 Is HERE',
+    channel: 'Bijan Bowen',
+    video_id: 'tIyQoLeTT3s',
+    views: '19,805次观看',
+    duration: '34:05',
+    published: '10小时前',
+    url: 'https://www.youtube.com/watch?v=tIyQoLeTT3s',
+  };
+  const it = normalizeRow(row, {
+    platform: 'youtube',
+    sourceType: 'search',
+    fetchedAt,
+  });
+  assert.equal(it.id, 'tIyQoLeTT3s');
+  assert.equal(it.author.name, 'Bijan Bowen');
+  assert.equal(it.metrics.view, 19805);
+  // "10小时前" is anchored to fetchedAt (12:00Z) → 02:00Z same day.
+  assert.equal(it.publishedAt, '2026-07-01T02:00:00.000Z');
+});
+
+test('localized count suffixes (万/亿, K/M) parse to numbers', () => {
+  const mk = (views) =>
+    normalizeRow(
+      { title: 't', url: 'https://y/1', views },
+      { platform: 'youtube' }
+    ).metrics.view;
+  assert.equal(mk('1.2万次观看'), 12000);
+  assert.equal(mk('3亿'), 3e8);
+  assert.equal(mk('1.7M views'), 1.7e6);
+  assert.equal(mk('820K'), 820000);
+});
+
+test('english relative time ("2 hours ago") anchored to fetchedAt', () => {
+  const fetchedAt = '2026-07-01T12:00:00.000Z';
+  const it = normalizeRow(
+    { title: 't', url: 'https://y/2', published: '2 hours ago' },
+    { platform: 'youtube', fetchedAt }
+  );
+  assert.equal(it.publishedAt, '2026-07-01T10:00:00.000Z');
+});
+
 test('numeric strings with commas parse to numbers', () => {
   const it = normalizeRow(
     { title: 't', url: 'u://x', play: '1,234' },

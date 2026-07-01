@@ -136,6 +136,10 @@ three-step hand-off — you run the judging middle step:
      (they drive the digest's grouping and boosts); add new ones sparingly.
    - Judge on meaning, not keywords — cross-language is expected (a Chinese post
      about model releases is relevant to an English AI profile).
+   - If the task carries `target_language` (set when `output.translate: true`),
+     also emit `title_translated`: the title in that language (echo unchanged if
+     already in it; keep product names/proper nouns as-is). It makes the reader
+     digest single-language.
      Write all objects (JSONL or a JSON array) to `out/judgments-<date>.jsonl`.
 
 3. **Render** — run (optionally dry-run `--validate-judgments <file>` first to

@@ -37,11 +37,8 @@ platforms:
     enabled: true
     sources: [trending]
 
-  youtube:
-    enabled: true
-    sources: [trending]
-    packs:
-      - sources/youtube-ai-channels.yaml
+  # YouTube now flows through the reach layer (OpenCLI, desktop-only); it is not
+  # part of this headless demo config. Enable it on desktop via `youtube.reach`.
 
 rsshub:
   base_url: https://rsshub.app

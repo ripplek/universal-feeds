@@ -1,5 +1,10 @@
 output:
   language: en # default: en; optional: zh
+  # translate: unify the reader digest into `language` so headlines aren't a
+  # mix of English and Chinese. Requires filter.mode: llm/hybrid — the judging
+  # agent returns each title in `language` (no extra API call). Off = titles
+  # render in their original language. See docs/FILTERING.md.
+  translate: false
   max_items: 30
   summarize_top_n: 0 # MVP default: 0 (no summarization). Set >0 to enable later.
   recency_hours: 24
@@ -34,7 +39,7 @@ recommended:
   min_score: 0.6
 
 ranking:
-  # Prevent a single source (e.g. a WeChat album) from flooding a topic section.
+  # Prevent a single prolific source from flooding a topic section.
   # 0 = disabled
   max_per_source_per_topic: 2
 
@@ -85,15 +90,17 @@ platforms:
     enabled: true
     sources: [trending]
 
-  youtube:
-    enabled: true
-    sources: [trending]
-    packs: ['sources/youtube-ai-channels.yaml']
-
   # Reach layer — auth-gated platforms via OpenCLI browser bridge (desktop-only).
   # One-time setup + health check: see docs/REACH.md and `digest reach doctor`.
   # Disabled by default; enable per platform once OpenCLI + the Chrome extension
   # are installed and you are logged in.
+  youtube:
+    reach:
+      enabled: false
+      mode: search # feed (homepage recommendations) | search
+      query: 'AI agents'
+      limit: 20
+      tags: [ai]
   reddit:
     reach:
       enabled: false
@@ -112,12 +119,6 @@ platforms:
 # Default topics: keep MVP digest focused on agentic AI + OpenClaw.
 # Users can edit/replace this list.
 topics:
-  - name: wechat-following
-    match: any
-    source_pack_allow: ['sources/cn-wechat-hot.yaml']
-    # Only surface WeChat items from our explicit list
-    boost: 1.05
-
   - name: openclaw
     match: any
     keywords:

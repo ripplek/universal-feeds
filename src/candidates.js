@@ -61,6 +61,13 @@ const JUDGMENT_SCHEMA = {
   },
 };
 
+// Human-readable name for the digest output language, used to instruct the judge
+// when translation is on. Falls back to the raw code for anything unmapped.
+const LANGUAGE_NAMES = { en: 'English', zh: 'Chinese (Simplified)' };
+export function languageName(code) {
+  return LANGUAGE_NAMES[code] || code || 'English';
+}
+
 // Self-contained judging task written alongside the candidates file. An agent
 // can read this one JSON object and judge without loading any skill: it carries
 // the interest profile, the topic whitelist, the exact output schema, and the
@@ -71,7 +78,43 @@ export function buildJudgingTask({ cfg = {}, date, count, candidatesPath }) {
     ? cfg.topics.map((t) => t?.name).filter((n) => typeof n === 'string')
     : [];
   const outputPath = `out/judgments-${date}.jsonl`;
-  return {
+
+  // Optional: unify the digest's display language. When on, the judge also
+  // returns each title rendered in `output.language`, so the reader view isn't a
+  // mix of English and Chinese headlines. Folded into the existing judging pass
+  // (no extra hand-off) — the agent already reads every candidate.
+  const translate = cfg.output?.translate === true;
+  const targetLanguage = languageName(cfg.output?.language);
+  const schema = translate
+    ? {
+        ...JUDGMENT_SCHEMA,
+        properties: {
+          ...JUDGMENT_SCHEMA.properties,
+          title_translated: {
+            type: 'string',
+            description: `The candidate's title rendered in ${targetLanguage}. If it is already in ${targetLanguage}, echo it unchanged. Translate meaning, keep proper nouns/product names as-is.`,
+          },
+        },
+      }
+    : JUDGMENT_SCHEMA;
+
+  const instructions = [
+    `Read every JSONL candidate in ${candidatesPath}.`,
+    'For each candidate emit exactly one judgment object matching judgment_schema.',
+    'Echo `id` verbatim. Judge on meaning, not keywords — cross-language is expected.',
+    'Reuse `topics` names where they fit; add new ones sparingly.',
+  ];
+  if (translate) {
+    instructions.push(
+      `Also set \`title_translated\`: the title in ${targetLanguage} (echo unchanged if already in ${targetLanguage}).`
+    );
+  }
+  instructions.push(
+    `Write all judgments (JSONL, one per line) to ${outputPath}, then re-run:`,
+    `  node bin/digest --config <cfg> --judgments ${outputPath}`
+  );
+
+  const task = {
     task: 'universal-feeds/relevance-judging',
     date,
     model: filter.model || 'claude-haiku-4-5',
@@ -85,15 +128,10 @@ export function buildJudgingTask({ cfg = {}, date, count, candidatesPath }) {
     require_topic_match: cfg.output?.require_topic_match === true,
     count,
     candidatesPath,
-    instructions: [
-      `Read every JSONL candidate in ${candidatesPath}.`,
-      'For each candidate emit exactly one judgment object matching judgment_schema.',
-      'Echo `id` verbatim. Judge on meaning, not keywords — cross-language is expected.',
-      'Reuse `topics` names where they fit; add new ones sparingly.',
-      `Write all judgments (JSONL, one per line) to ${outputPath}, then re-run:`,
-      `  node bin/digest --config <cfg> --judgments ${outputPath}`,
-    ].join(' '),
-    judgment_schema: JUDGMENT_SCHEMA,
+    instructions: instructions.join(' '),
+    judgment_schema: schema,
     output: { path: outputPath, format: 'jsonl' },
   };
+  if (translate) task.target_language = targetLanguage;
+  return task;
 }

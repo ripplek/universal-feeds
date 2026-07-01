@@ -28,6 +28,7 @@ test('normalizeResult: full stage carries items/digest paths', () => {
     date: '2026-07-01',
     itemsPath: 'out/items-2026-07-01.jsonl',
     digestPath: 'out/digest-2026-07-01.md',
+    inspectionPath: null,
     candidatesPath: null,
     count: 12,
   });

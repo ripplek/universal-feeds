@@ -14,8 +14,8 @@ OpenCLI's browser bridge (the "reach" layer) instead of juggling API tokens.
 
 ## What it does
 
-- **Sources** — X (via `bird` or reach), RSS packs, V2EX, YouTube, WeChat MP
-  albums natively; plus 15 auth-gated platforms through the reach layer: Twitter,
+- **Sources** — X (via `bird` or reach), RSS packs, V2EX natively;
+  plus 16 auth-gated platforms through the reach layer: YouTube, Twitter,
   Reddit, Bilibili, Xiaohongshu, Facebook, Instagram, LinkedIn, Xueqiu, Weibo,
   Hacker News, Product Hunt, 36Kr, Juejin, TikTok, Substack.
 - **One schema** — every source normalizes to `FeedItem` (see `docs/SCHEMA.md`),
@@ -25,14 +25,17 @@ OpenCLI's browser bridge (the "reach" layer) instead of juggling API tokens.
   natural-language interest profile (`filter.mode: llm`, see `docs/FILTERING.md`).
 - **Ranking** — engagement + recency + per-source weight/reliability, with
   de-duplication that keeps the richer copy of a repeated URL.
-- **Output** — `out/items-YYYY-MM-DD.jsonl` and `out/digest-YYYY-MM-DD.md`.
+- **Output** — `out/items-YYYY-MM-DD.jsonl`, the reader-facing
+  `out/digest-YYYY-MM-DD.md` (clean, deduplicated, grouped by topic), and
+  `out/digest-inspection-YYYY-MM-DD.md` (the same items with scores, tags, and
+  keyword hits, for debugging the ranking).
 
 ## Status
 
 Usable and dogfooded as a daily digest since early 2026. The reach layer is
 desktop-only (it reuses a running Chrome — see `docs/adr/0001-*.md`); CI runs the
-unit tests plus a digest smoke test. Public sources (RSS / YouTube / V2EX / HN /
-36Kr) need no login; the rest are opt-in once you're signed in.
+unit tests plus a digest smoke test. Public sources (RSS / V2EX / HN /
+36Kr) need no login; the rest (YouTube included) are opt-in once you're signed in.
 
 ## Quick start
 
@@ -74,9 +77,9 @@ and the candidates → judgments → render loop — is in [`AGENTS.md`](AGENTS.
   node bin/digest --config config/feeds.yaml --json
   ```
 
-**Capability tiers.** Tier-0 sources (RSS / YouTube / V2EX / Hacker News / 36Kr)
-need no login and run anywhere, including headless/CI. The reach layer (Reddit,
-Twitter, Bilibili, Xiaohongshu, …) drives a real logged-in Chrome and is
+**Capability tiers.** Tier-0 sources (RSS / V2EX / Hacker News / 36Kr)
+need no login and run anywhere, including headless/CI. The reach layer (YouTube,
+Reddit, Twitter, Bilibili, Xiaohongshu, …) drives a real logged-in Chrome and is
 **desktop-only** — an agent in a headless/cloud environment can use tier-0 only.
 
 Scheduled delivery has a copy-paste cron template with a pluggable delivery seam

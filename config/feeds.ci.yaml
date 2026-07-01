@@ -27,11 +27,8 @@ platforms:
     enabled: true
     sources: [trending]
 
-  youtube:
-    enabled: true
-    sources: [trending]
-    packs:
-      - sources/youtube-ai-channels.yaml
+  # YouTube is served via the reach layer (OpenCLI), which is desktop-only and
+  # cannot run in headless CI — so it is intentionally absent from this config.
 
 rsshub:
   base_url: https://rsshub.app

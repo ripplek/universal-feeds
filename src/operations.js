@@ -49,6 +49,7 @@ export function normalizeResult(result = {}, { date, stage }) {
     date,
     itemsPath: result.itemsPath ?? null,
     digestPath: result.digestPath ?? null,
+    inspectionPath: result.inspectionPath ?? null,
     candidatesPath: result.candidatesPath ?? null,
     count: typeof result.count === 'number' ? result.count : 0,
   };

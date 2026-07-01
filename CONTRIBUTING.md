@@ -3,6 +3,7 @@
 Thanks for helping improve **universal-feeds**.
 
 This repo is both:
+
 - a **Node.js CLI** that generates topic-based daily digests from multiple sources, and
 - a **Clawdbot skill** entrypoint at `skill/universal-feeds/SKILL.md`.
 
@@ -15,6 +16,7 @@ This repo is both:
 ## Development setup
 
 Requirements:
+
 - Node.js 22+
 
 Install:
@@ -58,10 +60,12 @@ node bin/digest --config config/feeds.yaml --date today
 
 ## Adding a new adapter/source type
 
-1) Add a source module under `src/sources/` (see `rss.js`, `v2ex.js`, `youtube.js`).
-2) Normalize output to the shared item shape used across the pipeline.
-3) Add unit tests for critical parsing/ranking behavior.
-4) Update docs if you introduce new config keys.
+1. Add a source module under `src/sources/` (see `rss.js`, `v2ex.js`). For an
+   auth-gated platform served by OpenCLI, add a channel descriptor under
+   `src/reach/channels/` instead — the reach source handles the rest.
+2. Normalize output to the shared item shape used across the pipeline.
+3. Add unit tests for critical parsing/ranking behavior.
+4. Update docs if you introduce new config keys.
 
 ## PR process
 

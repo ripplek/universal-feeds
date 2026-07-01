@@ -18,10 +18,10 @@ Two ways to integrate, pick one:
 
 ## Capability tiers (what works where)
 
-| Tier                   | Sources                                                                                   | Requirement                                                             | CI / headless   |
-| ---------------------- | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | --------------- |
-| **tier-0 (public)**    | RSS, YouTube channel packs, V2EX, Hacker News, 36Kr, X-via-`bird`                         | none (or `bird` cookies for X)                                          | ✅ works        |
-| **reach (auth-gated)** | Twitter, Reddit, Bilibili, Xiaohongshu, Weibo, LinkedIn, Xueqiu, TikTok, Substack, … (15) | OpenCLI + its Chrome extension, logged into the sites, **desktop only** | ❌ desktop only |
+| Tier                   | Sources                                                                                            | Requirement                                                             | CI / headless   |
+| ---------------------- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | --------------- |
+| **tier-0 (public)**    | RSS, V2EX, Hacker News, 36Kr, X-via-`bird`                                                         | none (or `bird` cookies for X)                                          | ✅ works        |
+| **reach (auth-gated)** | YouTube, Twitter, Reddit, Bilibili, Xiaohongshu, Weibo, LinkedIn, Xueqiu, TikTok, Substack, … (16) | OpenCLI + its Chrome extension, logged into the sites, **desktop only** | ❌ desktop only |
 
 An agent running in a headless/CI/cloud environment can only use tier-0. The
 reach layer drives a real logged-in Chrome and cannot run headless (see
@@ -51,6 +51,7 @@ stdout (one object):
   "date": "2026-07-01",
   "itemsPath": "…/out/items-2026-07-01.jsonl",
   "digestPath": "…/out/digest-2026-07-01.md",
+  "inspectionPath": "…/out/digest-inspection-2026-07-01.md",
   "candidatesPath": null,
   "count": 30
 }
@@ -58,8 +59,11 @@ stdout (one object):
 
 On failure: `{"status":"error","stage":"full","error":"<message>"}` and exit ≠ 0.
 
-Files written: `out/items-<date>.jsonl` (ranked `FeedItem`s, see `docs/SCHEMA.md`)
-and `out/digest-<date>.md` (the rendered digest).
+Files written: `out/items-<date>.jsonl` (ranked `FeedItem`s, see `docs/SCHEMA.md`);
+`out/digest-<date>.md` (the reader-facing digest — clean, deduplicated, grouped
+by topic, the file you deliver); and `out/digest-inspection-<date>.md` (the same
+items with scores, tags, keyword hits, and the full per-platform list — for
+debugging ranking/filtering, not for readers).
 
 ### AI relevance filtering — the three-step loop
 

@@ -12,21 +12,23 @@
 
 ## 能做什么
 
-- **数据源** —— 原生支持 X（`bird` 或 reach）、RSS 源包、V2EX、YouTube、微信公众号专辑；
-  再加 reach 层的 15 个需登录平台：Twitter、Reddit、B 站、小红书、Facebook、Instagram、
+- **数据源** —— 原生支持 X（`bird` 或 reach）、RSS 源包、V2EX；
+  再加 reach 层的 16 个需登录平台：YouTube、Twitter、Reddit、B 站、小红书、Facebook、Instagram、
   LinkedIn、雪球、微博、Hacker News、Product Hunt、36 氪、掘金、TikTok、Substack。
 - **统一结构** —— 每个源都归一到 `FeedItem`（见 `docs/SCHEMA.md`），排序、去重、渲染
   都不用关心条目来自哪里。
 - **两种过滤** —— 默认是关键词/anchor 匹配（零配置）；也可以让 Clawdbot agent 按一段
   自然语言的兴趣画像给每条打相关性分（`filter.mode: llm`，见 `docs/FILTERING.md`）。
 - **排序** —— 互动量 + 时效 + 每源权重/可靠度；去重时保留同一 URL 里信息更全的那条。
-- **产物** —— `out/items-YYYY-MM-DD.jsonl` 和 `out/digest-YYYY-MM-DD.md`。
+- **产物** —— `out/items-YYYY-MM-DD.jsonl`、面向读者的
+  `out/digest-YYYY-MM-DD.md`（清洗去重、按主题组织），以及
+  `out/digest-inspection-YYYY-MM-DD.md`（同一批条目，带分数、标签、命中词，供调试排序用）。
 
 ## 现状
 
 已可用，自 2026 年初起作为每日简报自用。reach 层只能在桌面跑（复用运行中的 Chrome，
-见 `docs/adr/0001-*.md`）；CI 跑单元测试加一个 digest 冒烟测试。公开源（RSS / YouTube /
-V2EX / HN / 36 氪）不需登录，其余按需开启、前提是你已登录对应站点。
+见 `docs/adr/0001-*.md`）；CI 跑单元测试加一个 digest 冒烟测试。公开源（RSS /
+V2EX / HN / 36 氪）不需登录，其余（含 YouTube）按需开启、前提是你已登录对应站点。
 
 ## 快速开始
 

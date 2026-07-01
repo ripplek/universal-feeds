@@ -7,11 +7,9 @@
 // digest (the project's stated per-source resilience).
 
 import path from 'node:path';
-import fs from 'node:fs';
 import { fetchX, enrichX, applyXRetweetPolicy } from './sources/x.js';
 import { fetchRssFromPacks } from './sources/rss.js';
 import { fetchV2exHot } from './sources/v2ex.js';
-import { fetchYouTubeFromPacks } from './sources/youtube.js';
 import { fetchViaReach } from './sources/reach.js';
 import { getAllChannels } from './reach/channels/index.js';
 import { ReachConfig } from './reach/config.js';
@@ -21,8 +19,8 @@ const platformOn = (cfg, name, src) =>
   (cfg?.platforms?.[name]?.sources || []).includes(src);
 
 // Order matters: earlier sources win at dedup (kept unless a later item is
-// richer). This preserves the historical x → rss → wechat → v2ex → youtube →
-// reach ordering.
+// richer). This preserves the historical x → rss → v2ex → reach ordering
+// (YouTube now flows through reach via OpenCLI — see src/reach/channels).
 export const SOURCES = [
   {
     id: 'x',
@@ -45,52 +43,9 @@ export const SOURCES = [
       }),
   },
   {
-    // WeChat MP albums are declared in a source pack rather than feeds.yaml.
-    id: 'wechat',
-    enabled: () => true, // fetch resolves album sources itself; no-op if none
-    fetch: async (cfg, { fetchedAt }) => {
-      const packPath = 'sources/cn-wechat-hot.yaml';
-      const pack = (await import('yaml')).default.parse(
-        fs.readFileSync(packPath, 'utf8')
-      );
-      const srcs = Array.isArray(pack?.sources) ? pack.sources : [];
-      const albums = srcs.filter(
-        (s) =>
-          s.type === 'html' && String(s.url || '').includes('mp/appmsgalbum')
-      );
-      if (!albums.length) return [];
-      const { fetchWeChatMpAlbum } = await import('./sources/wechat_mp.js');
-      const out = [];
-      for (const s of albums) {
-        const ws = await fetchWeChatMpAlbum({
-          name: s.name,
-          url: s.url,
-          fetchedAt,
-          limit: 30,
-        });
-        for (const it of ws) {
-          it.tags = Array.isArray(s.tags) ? s.tags : it.tags;
-          it.source = { pack: packPath, name: s.name };
-        }
-        out.push(...ws);
-      }
-      return out;
-    },
-  },
-  {
     id: 'v2ex',
     enabled: (cfg) => platformOn(cfg, 'v2ex', 'trending'),
     fetch: (cfg, { fetchedAt }) => fetchV2exHot({ fetchedAt, limit: 30 }),
-  },
-  {
-    id: 'youtube',
-    enabled: (cfg) => platformOn(cfg, 'youtube', 'trending'),
-    fetch: (cfg, { fetchedAt }) =>
-      fetchYouTubeFromPacks({
-        packs: cfg.platforms.youtube.packs || [],
-        fetchedAt,
-        maxPerSource: 10,
-      }),
   },
   {
     // Auth-gated platforms via the OpenCLI browser bridge. Per-channel opt-in
