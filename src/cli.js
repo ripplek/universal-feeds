@@ -1,14 +1,11 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { loadConfig } from './config.js';
-import { runDigest } from './pipeline.js';
 import { runReachCommand } from './reach/cli.js';
+import { formatValidationReport } from './judgments.js';
 import {
-  parseJudgments,
-  indexJudgments,
-  validateJudgments,
-  formatValidationReport,
-} from './judgments.js';
+  resolveRunContext,
+  emitCandidates,
+  runFullDigest,
+  validateJudgmentsFile,
+} from './operations.js';
 
 function parseArgs(argv) {
   const args = { config: 'config/feeds.yaml', date: 'today' };
@@ -24,35 +21,6 @@ function parseArgs(argv) {
     else if (a === '--help' || a === '-h') args.help = true;
   }
   return args;
-}
-
-function ymdInTz(d = new Date(), tz = 'Asia/Shanghai') {
-  // Simple YYYY-MM-DD using Intl; good enough for reports.
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: tz,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(d);
-  const get = (t) => parts.find((p) => p.type === t)?.value;
-  return `${get('year')}-${get('month')}-${get('day')}`;
-}
-
-// Normalize the shape returned by runDigest into a single stable object that an
-// agent can parse regardless of stage. `--json` prints exactly this object.
-export function normalizeCliResult(result = {}, { date, stage }) {
-  const out = {
-    status: 'ok',
-    stage,
-    date,
-    itemsPath: result.itemsPath ?? null,
-    digestPath: result.digestPath ?? null,
-    candidatesPath: result.candidatesPath ?? null,
-    count: typeof result.count === 'number' ? result.count : 0,
-  };
-  // Present only for the candidates stage (see docs/FILTERING.md).
-  if (result.judgingTaskPath) out.judgingTaskPath = result.judgingTaskPath;
-  return out;
 }
 
 const HELP = [
@@ -109,35 +77,12 @@ export async function main() {
 }
 
 async function runCli(args) {
-  // Allow using example config without copying.
-  const configPath = fs.existsSync(args.config)
-    ? args.config
-    : 'config/feeds.example.yaml';
+  const ctx = resolveRunContext(args.config, args.date);
 
-  const cfg = loadConfig(configPath);
-  const tz = cfg?.output?.tz || 'Asia/Shanghai';
-  const date = args.date === 'today' ? ymdInTz(new Date(), tz) : args.date;
-
-  const outDir = path.resolve('out');
-  fs.mkdirSync(outDir, { recursive: true });
-
-  // --validate-judgments: dry-run gate. Re-emit candidates (post pre-filter) to
-  // learn the valid id set, then validate the agent's judgments against it and
-  // the config thresholds. Writes no digest; exits non-zero on hard errors.
+  // --validate-judgments: dry-run gate. No digest is written; exit non-zero on
+  // hard errors (malformed / unknown id / out-of-range score / duplicate).
   if (args.validateJudgments) {
-    const cand = await runDigest({ cfg, date, outDir, stage: 'candidates' });
-    const candidateIds = fs
-      .readFileSync(cand.candidatesPath, 'utf8')
-      .split('\n')
-      .filter(Boolean)
-      .map((line) => JSON.parse(line).id);
-    const judgments = parseJudgments(
-      fs.readFileSync(args.validateJudgments, 'utf8')
-    );
-    const report = validateJudgments(judgments, {
-      candidateIds,
-      minRelevance: cfg?.filter?.min_relevance ?? 0.5,
-    });
+    const report = await validateJudgmentsFile(ctx, args.validateJudgments);
     if (args.json) {
       console.log(
         JSON.stringify({ status: report.ok ? 'ok' : 'error', ...report })
@@ -150,15 +95,10 @@ async function runCli(args) {
   }
 
   const stage = args.stage || 'full';
-  const result = await runDigest({
-    cfg,
-    date,
-    outDir,
-    stage,
-    judgmentsPath: args.judgments,
-  });
-
-  const normalized = normalizeCliResult(result, { date, stage });
+  const normalized =
+    stage === 'candidates'
+      ? await emitCandidates(ctx)
+      : await runFullDigest(ctx, { judgmentsPath: args.judgments });
 
   if (args.json) {
     console.log(JSON.stringify(normalized));

@@ -1,94 +1,38 @@
 // Thin, runtime-agnostic tool layer behind the MCP server (src/mcp/server.js).
 //
-// Each tool wraps an existing pipeline/reach entry point and returns a plain
-// JSON-serializable object — no MCP types here, so the logic is unit-testable
-// without a transport. The server file only maps these onto the MCP protocol.
+// Each tool is an adapter: it maps MCP arguments onto the shared operations
+// (src/operations.js) and returns a plain JSON-serializable object — no MCP
+// types here, so the logic is unit-testable without a transport. The server
+// file only maps these onto the MCP protocol.
 
 import fs from 'node:fs';
-import path from 'node:path';
-import { loadConfig } from '../config.js';
-import { runDigest } from '../pipeline.js';
-import { normalizeCliResult } from '../cli.js';
-import { parseJudgments, validateJudgments } from '../judgments.js';
+import {
+  resolveRunContext,
+  materializeJudgments,
+  emitCandidates,
+  runFullDigest,
+  validateJudgmentsFile,
+} from '../operations.js';
 import { ReachConfig } from '../reach/config.js';
 import { fetchViaReach } from '../sources/reach.js';
 
-function ymdInTz(d = new Date(), tz = 'Asia/Shanghai') {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: tz,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(d);
-  const get = (t) => parts.find((p) => p.type === t)?.value;
-  return `${get('year')}-${get('month')}-${get('day')}`;
-}
-
-function resolveConfig(configPath) {
-  const p = configPath || 'config/feeds.yaml';
-  const resolved = fs.existsSync(p) ? p : 'config/feeds.example.yaml';
-  return loadConfig(resolved);
-}
-
-function resolveDate(cfg, date) {
-  const tz = cfg?.output?.tz || 'Asia/Shanghai';
-  return !date || date === 'today' ? ymdInTz(new Date(), tz) : date;
-}
-
-function ensureOutDir() {
-  const outDir = path.resolve('out');
-  fs.mkdirSync(outDir, { recursive: true });
-  return outDir;
-}
-
-// Accept judgments as a file path, a JSONL/JSON string, or an array of objects.
-// Returns a path on disk (writing inline data to out/judgments-<date>.jsonl).
-function materializeJudgments({ judgments, judgmentsPath, outDir, date }) {
-  if (judgmentsPath) return judgmentsPath;
-  if (judgments == null) return undefined;
-  const arr = Array.isArray(judgments)
-    ? judgments
-    : parseJudgments(String(judgments));
-  const p = path.join(outDir, `judgments-${date}.jsonl`);
-  fs.writeFileSync(
-    p,
-    arr.map((j) => JSON.stringify(j)).join('\n') + '\n',
-    'utf8'
-  );
-  return p;
-}
-
 export async function runDigestTool(args = {}) {
-  const cfg = resolveConfig(args.config);
-  const date = resolveDate(cfg, args.date);
-  const outDir = ensureOutDir();
+  const ctx = resolveRunContext(args.config, args.date);
   const judgmentsPath = materializeJudgments({
     judgments: args.judgments,
     judgmentsPath: args.judgmentsPath,
-    outDir,
-    date,
+    outDir: ctx.outDir,
+    date: ctx.date,
   });
-  const result = await runDigest({
-    cfg,
-    date,
-    outDir,
-    stage: 'full',
-    judgmentsPath,
-  });
-  return normalizeCliResult(result, { date, stage: 'full' });
+  return runFullDigest(ctx, { judgmentsPath });
 }
 
 export async function emitCandidatesTool(args = {}) {
-  const cfg = resolveConfig(args.config);
-  const date = resolveDate(cfg, args.date);
-  const outDir = ensureOutDir();
-  const result = await runDigest({ cfg, date, outDir, stage: 'candidates' });
-  const out = normalizeCliResult(result, { date, stage: 'candidates' });
+  const ctx = resolveRunContext(args.config, args.date);
+  const out = await emitCandidates(ctx);
   // Inline the judging task so an MCP client needn't read the file separately.
   try {
-    out.judgingTask = JSON.parse(
-      fs.readFileSync(result.judgingTaskPath, 'utf8')
-    );
+    out.judgingTask = JSON.parse(fs.readFileSync(out.judgingTaskPath, 'utf8'));
   } catch {
     // best effort
   }
@@ -96,14 +40,12 @@ export async function emitCandidatesTool(args = {}) {
 }
 
 export async function applyJudgmentsTool(args = {}) {
-  const cfg = resolveConfig(args.config);
-  const date = resolveDate(cfg, args.date);
-  const outDir = ensureOutDir();
+  const ctx = resolveRunContext(args.config, args.date);
   const judgmentsPath = materializeJudgments({
     judgments: args.judgments,
     judgmentsPath: args.judgmentsPath,
-    outDir,
-    date,
+    outDir: ctx.outDir,
+    date: ctx.date,
   });
   if (!judgmentsPath) {
     throw new Error(
@@ -111,33 +53,14 @@ export async function applyJudgmentsTool(args = {}) {
     );
   }
   // Validate against the current candidate set so the caller gets feedback
-  // instead of silent drops.
+  // instead of silent drops (advisory — render proceeds regardless).
   let validation = null;
   try {
-    const cand = await runDigest({ cfg, date, outDir, stage: 'candidates' });
-    const candidateIds = fs
-      .readFileSync(cand.candidatesPath, 'utf8')
-      .split('\n')
-      .filter(Boolean)
-      .map((l) => JSON.parse(l).id);
-    validation = validateJudgments(
-      parseJudgments(fs.readFileSync(judgmentsPath, 'utf8')),
-      {
-        candidateIds,
-        minRelevance: cfg?.filter?.min_relevance ?? 0.5,
-      }
-    );
+    validation = await validateJudgmentsFile(ctx, judgmentsPath);
   } catch {
     // validation is advisory; proceed to render regardless
   }
-  const result = await runDigest({
-    cfg,
-    date,
-    outDir,
-    stage: 'full',
-    judgmentsPath,
-  });
-  const out = normalizeCliResult(result, { date, stage: 'full' });
+  const out = await runFullDigest(ctx, { judgmentsPath });
   if (validation) out.validation = validation;
   return out;
 }
