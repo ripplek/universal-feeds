@@ -1,6 +1,4 @@
-function normalizeText(s) {
-  return (s || '').toLowerCase();
-}
+import { normalizeText, getDomain } from './text.js';
 
 function uniq(arr) {
   return [...new Set(arr.filter(Boolean))];
@@ -22,12 +20,24 @@ export function tagAndScore(items, cfg) {
   const compiled = topics.map((t) => {
     const kws = Array.isArray(t.keywords) ? t.keywords : [];
     const anchors = Array.isArray(t.anchors) ? t.anchors : [];
-    const excludes = Array.isArray(t.exclude_keywords) ? t.exclude_keywords : [];
-    const platformAllow = Array.isArray(t.platform_allow) ? t.platform_allow : null;
-    const allowDomains = Array.isArray(t.allow_domains) ? t.allow_domains : null;
-    const blockDomains = Array.isArray(t.block_domains) ? t.block_domains : null;
-    const sourcePackAllow = Array.isArray(t.source_pack_allow) ? t.source_pack_allow : null;
-    const sourceNameAllow = Array.isArray(t.source_name_allow) ? t.source_name_allow : null;
+    const excludes = Array.isArray(t.exclude_keywords)
+      ? t.exclude_keywords
+      : [];
+    const platformAllow = Array.isArray(t.platform_allow)
+      ? t.platform_allow
+      : null;
+    const allowDomains = Array.isArray(t.allow_domains)
+      ? t.allow_domains
+      : null;
+    const blockDomains = Array.isArray(t.block_domains)
+      ? t.block_domains
+      : null;
+    const sourcePackAllow = Array.isArray(t.source_pack_allow)
+      ? t.source_pack_allow
+      : null;
+    const sourceNameAllow = Array.isArray(t.source_name_allow)
+      ? t.source_name_allow
+      : null;
     const match = t.match === 'all' ? 'all' : 'any';
     return {
       name: t.name,
@@ -40,7 +50,7 @@ export function tagAndScore(items, cfg) {
       sourceNameAllow,
       kws: kws.map((k) => normalizeText(k)).filter(Boolean),
       anchors: anchors.map((k) => normalizeText(k)).filter(Boolean),
-      excludes: excludes.map((k) => normalizeText(k)).filter(Boolean)
+      excludes: excludes.map((k) => normalizeText(k)).filter(Boolean),
     };
   });
 
@@ -49,7 +59,7 @@ export function tagAndScore(items, cfg) {
     return {
       name: e.name,
       boost: typeof e.boost === 'number' ? e.boost : 1.0,
-      aliases: aliases.map((a) => normalizeText(a)).filter(Boolean)
+      aliases: aliases.map((a) => normalizeText(a)).filter(Boolean),
     };
   });
 
@@ -60,7 +70,11 @@ export function tagAndScore(items, cfg) {
 
   const out = [];
   for (const it of items) {
-    const hay = normalizeText([it.title, it.text, it.author?.name, it.author?.handle].filter(Boolean).join('\n'));
+    const hay = normalizeText(
+      [it.title, it.text, it.author?.name, it.author?.handle]
+        .filter(Boolean)
+        .join('\n')
+    );
 
     const matched = [];
     const tagHits = {};
@@ -72,26 +86,30 @@ export function tagAndScore(items, cfg) {
       // Source allow filters (optional)
       const srcPack = it?.source?.pack;
       const srcName = it?.source?.name;
-      if (t.sourcePackAllow && (!srcPack || !t.sourcePackAllow.includes(srcPack))) continue;
-      if (t.sourceNameAllow && (!srcName || !t.sourceNameAllow.includes(srcName))) continue;
+      if (
+        t.sourcePackAllow &&
+        (!srcPack || !t.sourcePackAllow.includes(srcPack))
+      )
+        continue;
+      if (
+        t.sourceNameAllow &&
+        (!srcName || !t.sourceNameAllow.includes(srcName))
+      )
+        continue;
 
       // Domain allow/block filters (optional)
-      const domain = (() => {
-        try {
-          return it.url ? new URL(it.url).hostname : null;
-        } catch {
-          return null;
-        }
-      })();
+      const domain = getDomain(it.url);
       if (domain) {
         if (t.blockDomains && t.blockDomains.includes(domain)) continue;
         if (t.allowDomains && !t.allowDomains.includes(domain)) continue;
       }
 
       // Exclude keywords: if any present, skip this topic match.
-      if (t.excludes?.length && t.excludes.some((k) => k && hay.includes(k))) continue;
+      if (t.excludes?.length && t.excludes.some((k) => k && hay.includes(k)))
+        continue;
 
-      const anchorOk = !t.anchors.length || t.anchors.some((k) => k && hay.includes(k));
+      const anchorOk =
+        !t.anchors.length || t.anchors.some((k) => k && hay.includes(k));
       const hits = findHits(hay, t.kws, t.match);
       const kwOk = !t.kws.length ? true : hits.length > 0;
       const hit = anchorOk && kwOk;
@@ -99,7 +117,7 @@ export function tagAndScore(items, cfg) {
         matched.push(t.name);
         if (hits.length) tagHits[t.name] = hits;
         // additive boost; keep simple for MVP
-        topicBoost += (t.boost - 1.0);
+        topicBoost += t.boost - 1.0;
       }
     }
 
@@ -112,7 +130,7 @@ export function tagAndScore(items, cfg) {
         entityHit = true;
         const tag = `entity:${e.name}`;
         matched.push(tag);
-        topicBoost += (e.boost - 1.0);
+        topicBoost += e.boost - 1.0;
       }
     }
 
@@ -125,7 +143,9 @@ export function tagAndScore(items, cfg) {
 
     const tags = uniq([...(it.tags || []), ...matched]);
     const score = (it.score || 0) + topicBoost;
-    const debug = Object.keys(tagHits).length ? { ...(it.debug || {}), tagHits } : it.debug;
+    const debug = Object.keys(tagHits).length
+      ? { ...(it.debug || {}), tagHits }
+      : it.debug;
     out.push({ ...it, tags, score, debug });
   }
   return out;

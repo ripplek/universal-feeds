@@ -1,6 +1,4 @@
-function normalize(s) {
-  return (s || '').toLowerCase();
-}
+import { normalizeText as normalize } from './text.js';
 
 function compileTopicMatchers(cfg) {
   const topics = Array.isArray(cfg?.topics) ? cfg.topics : [];
@@ -8,8 +6,12 @@ function compileTopicMatchers(cfg) {
   for (const t of topics) {
     const name = t?.name;
     if (!name) continue;
-    const kws = (Array.isArray(t.keywords) ? t.keywords : []).map(normalize).filter(Boolean);
-    const anchors = (Array.isArray(t.anchors) ? t.anchors : []).map(normalize).filter(Boolean);
+    const kws = (Array.isArray(t.keywords) ? t.keywords : [])
+      .map(normalize)
+      .filter(Boolean);
+    const anchors = (Array.isArray(t.anchors) ? t.anchors : [])
+      .map(normalize)
+      .filter(Boolean);
     out.push({ name, kws, anchors });
   }
   return out;
@@ -19,7 +21,8 @@ function matchesAnyTopic(text, matchers) {
   if (!text) return false;
   const hay = normalize(text);
   for (const t of matchers) {
-    const anchorOk = !t.anchors.length || t.anchors.some((a) => a && hay.includes(a));
+    const anchorOk =
+      !t.anchors.length || t.anchors.some((a) => a && hay.includes(a));
     const kwOk = !t.kws.length || t.kws.some((k) => k && hay.includes(k));
     if (anchorOk && kwOk) return true;
   }
@@ -28,17 +31,19 @@ function matchesAnyTopic(text, matchers) {
 
 function stripXNoiseText(text) {
   const t = String(text || '');
-  return t
-    // urls
-    .replace(/https?:\/\/\S+/gi, ' ')
-    // handles
-    .replace(/@[A-Za-z0-9_]{1,30}/g, ' ')
-    // hashtags
-    .replace(/#[\p{L}\p{N}_]{2,}/gu, ' ')
-    // common separators
-    .replace(/[→➡️▶︎»]+/g, ' ')
-    .replace(/[\s\u200B]+/g, ' ')
-    .trim();
+  return (
+    t
+      // urls
+      .replace(/https?:\/\/\S+/gi, ' ')
+      // handles
+      .replace(/@[A-Za-z0-9_]{1,30}/g, ' ')
+      // hashtags
+      .replace(/#[\p{L}\p{N}_]{2,}/gu, ' ')
+      // common separators
+      .replace(/[→➡️▶︎»]+/g, ' ')
+      .replace(/[\s\u200B]+/g, ' ')
+      .trim()
+  );
 }
 
 function tokenCount(s) {
@@ -48,14 +53,19 @@ function tokenCount(s) {
 
 export function filterXNoise(items, cfg) {
   // Conservative v2 filters: structure-based, not ideology-based.
-  const promoRe = /(pre-?save|buy now|promo code|giveaway|sweepstakes|limited time|sale\b|discount\b|win \$|free \$|out the door prices)/i;
+  const promoRe =
+    /(pre-?save|buy now|promo code|giveaway|sweepstakes|limited time|sale\b|discount\b|win \$|free \$|out the door prices)/i;
   const lotsOfHashtags = /(#[\p{L}\p{N}_]{2,}\s*){5,}/u;
   const linkOnlyish = /^(rt\s+@\w+:\s*)?(https?:\/\/\S+\s*)+$/i;
 
   const xCfg = cfg?.platforms?.x?.following || {};
   const minLen = typeof xCfg.min_text_len === 'number' ? xCfg.min_text_len : 0;
-  const minEffectiveLen = typeof xCfg.min_effective_len === 'number' ? xCfg.min_effective_len : 20;
-  const minEffectiveTokens = typeof xCfg.min_effective_tokens === 'number' ? xCfg.min_effective_tokens : 6;
+  const minEffectiveLen =
+    typeof xCfg.min_effective_len === 'number' ? xCfg.min_effective_len : 20;
+  const minEffectiveTokens =
+    typeof xCfg.min_effective_tokens === 'number'
+      ? xCfg.min_effective_tokens
+      : 6;
 
   const matchers = compileTopicMatchers(cfg);
 
