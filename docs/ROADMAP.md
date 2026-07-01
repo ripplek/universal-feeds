@@ -28,7 +28,7 @@ Legend: `[x]` done · `[~]` partial · `[ ]` not started.
 
 ## Phase 3 — CN platforms expansion
 
-- [ ] Weibo 热搜 adapter (best-effort + fallback) — **not implemented** (no `src/sources/weibo*`)
+- [x] Weibo adapter — via reach layer (`feed` + `hot`, OpenCLI); native `src/sources/weibo*` not needed
 - [~] WeChat adapter — album-only via `__biz` + `album` (`src/sources/wechat_mp.js`, sogou source list); no general third-party hot list yet
 - [x] Better zh/en topic handling (`src/tagging.js`)
 - [x] Xiaohongshu + Bilibili via reach layer (`src/reach/channels/`, OpenCLI)
@@ -41,8 +41,9 @@ Ported from Agent-Reach (MIT); depends on the OpenCLI browser bridge. Desktop-on
 - [x] Core: probe / config (0o600) / opencli backend / normalize / channels / doctor
 - [x] `digest reach doctor | configure | fetch` CLI
 - [x] Pipeline integration (opt-in per `platforms.<name>.reach`)
-- [x] Channels: twitter, reddit, bilibili, xiaohongshu, facebook, instagram, linkedin, xueqiu
-- [x] Verified live: reddit end-to-end; twitter/bilibili/xiaohongshu field-shape
+- [x] Channels (15): twitter, reddit, bilibili, xiaohongshu, facebook, instagram, linkedin, xueqiu, weibo, hackernews, producthunt, 36kr, juejin, tiktok, substack
+- [x] Verified end-to-end live: reddit, hackernews, 36kr; field-verified: twitter/bilibili/xiaohongshu/weibo
+- [ ] producthunt opencli `hot` erred live — revisit; juejin/tiktok/substack need a logged-in/working run to calibrate
 - [x] `reach watch` — compact health + npm update check, cron-friendly exit code
 - [~] facebook / instagram — mapped from adapter columns; live fetch returned empty (needs a logged-in run with feed content to calibrate)
 - [~] linkedin — added (feed=`timeline`); tier-2, OpenCLI backend `off` until configured
@@ -52,7 +53,7 @@ Ported from Agent-Reach (MIT); depends on the OpenCLI browser bridge. Desktop-on
 ## Phase 4 — Short video platforms
 
 - [~] YouTube support — channel packs only (`src/sources/youtube.js`); playlists / transcripts not done
-- [ ] TikTok (if feasible via official API or safe relay)
+- [x] TikTok — via reach layer (`explore`, OpenCLI browser bridge)
 
 ## Phase 5 — Personalization
 

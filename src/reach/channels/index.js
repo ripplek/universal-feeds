@@ -116,6 +116,95 @@ export const CHANNELS = [
       trending: { cmd: 'hot', sourceType: 'trending' },
     },
   },
+  {
+    name: 'weibo',
+    platform: 'weibo',
+    description: '微博',
+    tier: 1,
+    backends: ['OpenCLI'],
+    hosts: ['weibo.com', 'weibo.cn'],
+    commands: {
+      feed: { cmd: 'feed', sourceType: 'following' },
+      trending: { cmd: 'hot', sourceType: 'trending' },
+      search: { cmd: 'search', sourceType: 'search' },
+    },
+  },
+  {
+    name: 'hackernews',
+    platform: 'hackernews',
+    description: 'Hacker News',
+    tier: 0,
+    backends: ['OpenCLI'],
+    hosts: ['news.ycombinator.com'],
+    commands: {
+      feed: { cmd: 'top', sourceType: 'trending' },
+      trending: { cmd: 'top', sourceType: 'trending' },
+      search: { cmd: 'search', sourceType: 'search' },
+    },
+  },
+  {
+    // producthunt exposes only `hot` (no search command).
+    name: 'producthunt',
+    platform: 'producthunt',
+    description: 'Product Hunt',
+    tier: 0,
+    backends: ['OpenCLI'],
+    hosts: ['producthunt.com'],
+    commands: {
+      feed: { cmd: 'hot', sourceType: 'trending' },
+      trending: { cmd: 'hot', sourceType: 'trending' },
+    },
+  },
+  {
+    name: '36kr',
+    platform: '36kr',
+    description: '36氪',
+    tier: 0,
+    backends: ['OpenCLI'],
+    hosts: ['36kr.com'],
+    commands: {
+      feed: { cmd: 'hot', sourceType: 'trending' },
+      trending: { cmd: 'hot', sourceType: 'trending' },
+      search: { cmd: 'search', sourceType: 'search' },
+    },
+  },
+  {
+    name: 'juejin',
+    platform: 'juejin',
+    description: '掘金',
+    tier: 1,
+    backends: ['OpenCLI'],
+    hosts: ['juejin.cn'],
+    commands: {
+      feed: { cmd: 'hot', sourceType: 'trending' },
+      trending: { cmd: 'hot', sourceType: 'trending' },
+    },
+  },
+  {
+    name: 'tiktok',
+    platform: 'tiktok',
+    description: 'TikTok',
+    tier: 1,
+    backends: ['OpenCLI'],
+    hosts: ['tiktok.com'],
+    commands: {
+      feed: { cmd: 'explore', sourceType: 'trending' },
+      trending: { cmd: 'explore', sourceType: 'trending' },
+      search: { cmd: 'search', sourceType: 'search' },
+    },
+  },
+  {
+    name: 'substack',
+    platform: 'substack',
+    description: 'Substack',
+    tier: 1,
+    backends: ['OpenCLI'],
+    hosts: ['substack.com'],
+    commands: {
+      feed: { cmd: 'feed', sourceType: 'following' },
+      search: { cmd: 'search', sourceType: 'search' },
+    },
+  },
 ];
 
 // Note: xiaoyuzhou (小宇宙) is intentionally omitted — its OpenCLI adapter is

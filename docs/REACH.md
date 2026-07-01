@@ -70,6 +70,13 @@ platform's feed/trending command.
 | instagram   | `instagram`   | `explore`  | —      | adapter columns\*     |
 | linkedin    | `linkedin`    | `timeline` | —      | adapter columns (t2)† |
 | xueqiu      | `xueqiu`      | `feed`     | —      | adapter columns       |
+| weibo       | `weibo`       | `feed`     | ✅     | fields (live)         |
+| hackernews  | `hackernews`  | `top`      | ✅     | end-to-end (live)     |
+| 36kr        | `36kr`        | `hot`      | ✅     | end-to-end (live)     |
+| producthunt | `producthunt` | `hot`      | —      | wired; opencli erred‡ |
+| juejin      | `juejin`      | `hot`      | —      | adapter columns       |
+| tiktok      | `tiktok`      | `explore`  | ✅     | adapter columns       |
+| substack    | `substack`    | `feed`     | ✅     | adapter columns       |
 
 \* facebook/instagram live fetches returned empty this run (feed may require
 scroll/interaction); mapping is from the OpenCLI adapter's declared columns.
@@ -79,6 +86,8 @@ omitted because its OpenCLI command returns job listings, not posts. xueqiu
 or `mode: trending` (the `hot` command). Podcast platform **xiaoyuzhou** is
 intentionally not a channel — its adapter is podcast-lookup only, with no
 feed/search command.
+‡ producthunt's OpenCLI `hot` command errored on a live run (page/anti-bot);
+the channel is wired and the pipeline skips it best-effort when it fails.
 
 Output is mapped to `FeedItem` (see `docs/SCHEMA.md`) by a defensive,
 alias-based normalizer (`src/reach/normalize.js`) so minor per-command column

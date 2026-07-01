@@ -125,6 +125,95 @@ test('xueqiu feed row (replies) → FeedItem', () => {
   assert.equal(it.metrics.reply, 3);
 });
 
+test('weibo feed row → FeedItem (reposts + time)', () => {
+  const row = {
+    id: '5',
+    author: 'user',
+    text: '热点',
+    reposts: 10,
+    comments: 4,
+    likes: 88,
+    time: '2026-06-30 12:00',
+    url: 'https://weibo.com/1/5',
+  };
+  const it = normalizeRow(row, { platform: 'weibo', sourceType: 'following' });
+  assert.equal(it.metrics.repost, 10);
+  assert.equal(it.metrics.like, 88);
+  assert.match(it.publishedAt, /^2026-06-30/);
+});
+
+test('hackernews top row → FeedItem', () => {
+  const row = {
+    rank: 1,
+    id: 42,
+    title: 'Show HN: thing',
+    score: 500,
+    author: 'pg',
+    comments: 200,
+    url: 'https://news.ycombinator.com/item?id=42',
+  };
+  const it = normalizeRow(row, {
+    platform: 'hackernews',
+    sourceType: 'trending',
+  });
+  assert.equal(it.id, '42');
+  assert.equal(it.title, 'Show HN: thing');
+  assert.equal(it.metrics.like, 500);
+  assert.equal(it.metrics.reply, 200);
+});
+
+test('producthunt hot row (name→title, votes→like)', () => {
+  const row = {
+    rank: 1,
+    name: 'CoolApp',
+    votes: 320,
+    url: 'https://producthunt.com/posts/coolapp',
+  };
+  const it = normalizeRow(row, {
+    platform: 'producthunt',
+    sourceType: 'trending',
+  });
+  assert.equal(it.title, 'CoolApp');
+  assert.equal(it.metrics.like, 320);
+});
+
+test('juejin hot row (brief→text)', () => {
+  const row = {
+    article_id: 'a1',
+    title: 'Vue tips',
+    brief: 'short summary',
+    views: 900,
+    likes: 30,
+    comments: 5,
+    author: 'dev',
+    url: 'https://juejin.cn/post/a1',
+  };
+  const it = normalizeRow(row, { platform: 'juejin' });
+  assert.equal(it.text, 'short summary');
+  assert.equal(it.metrics.view, 900);
+});
+
+test('tiktok explore row (desc→text, createTime→ISO, shares→repost)', () => {
+  const row = {
+    index: 0,
+    id: 't1',
+    author: 'creator',
+    url: 'https://tiktok.com/@creator/video/t1',
+    title: 'clip',
+    desc: 'fun',
+    plays: 10000,
+    likes: 500,
+    comments: 20,
+    shares: 8,
+    createTime: 1779832236,
+  };
+  const it = normalizeRow(row, { platform: 'tiktok', sourceType: 'trending' });
+  assert.equal(it.text, 'fun');
+  assert.equal(it.metrics.view, 10000);
+  assert.equal(it.metrics.repost, 8);
+  assert.match(it.publishedAt, /^2026-/);
+});
+
 test('numeric strings with commas parse to numbers', () => {
   const it = normalizeRow(
     { title: 't', url: 'u://x', play: '1,234' },

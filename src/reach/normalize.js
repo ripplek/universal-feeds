@@ -16,8 +16,10 @@ import crypto from 'node:crypto';
 const FIELD_ALIASES = {
   id: ['id', 'postId', 'bvid', 'note_id', 'pk'],
   url: ['url', 'link', 'permalink', 'url_overridden_by_dest'],
-  title: ['title'],
-  text: ['text', 'content', 'caption', 'selftext', 'body', 'desc'],
+  // `name`/`word`/`topic` are last-resort titles (e.g. producthunt product name,
+  // weibo hot-search term) — real `title` always wins.
+  title: ['title', 'word', 'name', 'topic'],
+  text: ['text', 'content', 'caption', 'selftext', 'brief', 'body', 'desc'],
   authorName: ['author', 'user', 'screen_name', 'username', 'nickname'],
   publishedAt: [
     'created_at',
@@ -25,11 +27,21 @@ const FIELD_ALIASES = {
     'published_at',
     'posted_at',
     'publishedAt',
+    'createTime',
     'timestamp',
     'time',
     'date',
   ],
-  like: ['likes', 'like', 'score', 'reactions', 'favorite_count', 'digg_count'],
+  like: [
+    'likes',
+    'like',
+    'score',
+    'reactions',
+    'votes',
+    'upvotes',
+    'favorite_count',
+    'digg_count',
+  ],
   view: ['views', 'view', 'play', 'plays', 'view_count'],
   reply: [
     'comments',
