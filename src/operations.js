@@ -10,7 +10,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { loadConfig } from './config.js';
-import { runDigest } from './pipeline.js';
+import { runDigest, runFullDigestOnce } from './pipeline.js';
 import { parseJudgments, validateJudgments } from './judgments.js';
 
 function ymdInTz(d = new Date(), tz = 'Asia/Shanghai') {
@@ -120,4 +120,45 @@ export async function validateJudgmentsFile(ctx, judgmentsFilePath) {
     candidateIds,
     minRelevance: cfg?.filter?.min_relevance ?? 0.5,
   });
+}
+
+// Validate + render in a SINGLE fetch. The digest is gated against the same base
+// pool the judgments are validated against, so the returned `validation` always
+// describes the digest that was produced (no validate/render drift). Accepts
+// inline judgments or a path. `sources` is injectable for tests.
+export async function applyJudgments(
+  ctx,
+  { judgments, judgmentsPath, sources } = {}
+) {
+  const { cfg, date, outDir } = ctx;
+  const resolvedPath = materializeJudgments({
+    judgments,
+    judgmentsPath,
+    outDir,
+    date,
+  });
+  if (!resolvedPath) {
+    throw new Error(
+      'apply_judgments requires `judgments` (array/JSONL) or `judgmentsPath`'
+    );
+  }
+  const { candidateIds, ...result } = await runFullDigestOnce({
+    cfg,
+    date,
+    outDir,
+    judgmentsPath: resolvedPath,
+    sources,
+  });
+  const out = normalizeResult(result, { date, stage: 'full' });
+  // Advisory: report how the judgments fared against the very set that was
+  // rendered. Never blocks the digest.
+  try {
+    out.validation = validateJudgments(
+      parseJudgments(fs.readFileSync(resolvedPath, 'utf8')),
+      { candidateIds, minRelevance: cfg?.filter?.min_relevance ?? 0.5 }
+    );
+  } catch {
+    // validation is advisory; the digest already rendered
+  }
+  return out;
 }
