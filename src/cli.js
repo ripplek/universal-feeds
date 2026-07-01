@@ -10,6 +10,8 @@ function parseArgs(argv) {
     const a = argv[i];
     if (a === '--config') args.config = argv[++i] || args.config;
     else if (a === '--date') args.date = argv[++i] || args.date;
+    else if (a === '--stage') args.stage = argv[++i] || args.stage;
+    else if (a === '--judgments') args.judgments = argv[++i] || args.judgments;
     else if (a === '--help' || a === '-h') args.help = true;
   }
   return args;
@@ -37,7 +39,14 @@ export async function main() {
   const args = parseArgs(process.argv);
   if (args.help) {
     console.log(
-      `Usage: universal-feeds --config <path> [--date today|YYYY-MM-DD]\n`
+      `Usage: universal-feeds --config <path> [--date today|YYYY-MM-DD]\n` +
+        `                       [--stage candidates] [--judgments <file>]\n`
+    );
+    console.log(`AI relevance filtering (filter.mode: llm): emit candidates,`);
+    console.log(`  judge them (see SKILL.md / docs/FILTERING.md), then apply:`);
+    console.log(`    digest --config c.yaml --stage candidates`);
+    console.log(
+      `    digest --config c.yaml --judgments out/judgments-<date>.jsonl`
     );
     console.log(`Tip: copy config/feeds.example.yaml to config/feeds.yaml`);
     return;
@@ -55,7 +64,21 @@ export async function main() {
   const outDir = path.resolve('out');
   fs.mkdirSync(outDir, { recursive: true });
 
-  const result = await runDigest({ cfg, date, outDir });
+  const result = await runDigest({
+    cfg,
+    date,
+    outDir,
+    stage: args.stage || 'full',
+    judgmentsPath: args.judgments,
+  });
+
+  if (result.candidatesPath) {
+    console.log(`Wrote: ${result.candidatesPath} (${result.count} candidates)`);
+    console.log(
+      'Next: have the agent judge these, then re-run with --judgments <file>.'
+    );
+    return;
+  }
   console.log(`Wrote: ${result.itemsPath}`);
   console.log(`Wrote: ${result.digestPath}`);
 }

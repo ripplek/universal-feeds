@@ -13,10 +13,18 @@ import { unfurlUrl } from './unfurl.js';
 import { rankItems } from './rank.js';
 import { tagAndScore } from './tagging.js';
 import { pickRecommended } from './recommend.js';
+import { buildCandidates, serializeCandidates } from './candidates.js';
+import { parseJudgments, indexJudgments, applyJudgments } from './judgments.js';
 import { trimByPlatform } from './trim.js';
 import { renderDigestMarkdown } from './render.js';
 
-export async function runDigest({ cfg, date, outDir }) {
+export async function runDigest({
+  cfg,
+  date,
+  outDir,
+  stage = 'full',
+  judgmentsPath,
+}) {
   // Make cfg available for adapters that need it (MVP shortcut; replace with explicit params later)
   globalThis.__UF_CFG = cfg;
 
@@ -156,6 +164,17 @@ export async function runDigest({ cfg, date, outDir }) {
     return ageH <= recencyH;
   });
 
+  // Stage 1 of AI relevance filtering: emit the compact candidate list for a
+  // Clawdbot agent to judge, then stop. See SKILL.md + docs/FILTERING.md.
+  if (stage === 'candidates') {
+    const cands = buildCandidates(items, {
+      maxTextLen: cfg?.filter?.max_text_len ?? 500,
+    });
+    const candidatesPath = path.join(outDir, `candidates-${date}.jsonl`);
+    fs.writeFileSync(candidatesPath, serializeCandidates(cands), 'utf8');
+    return { candidatesPath, count: cands.length };
+  }
+
   // X low-info enrichment: if a tweet is mostly link/mentions, unfurl the first URL
   // and display the destination title in the digest.
   const xCfg2 = cfg?.platforms?.x?.following || {};
@@ -238,7 +257,37 @@ export async function runDigest({ cfg, date, outDir }) {
     output: { ...(cfg.output || {}), require_topic_match: false },
   };
   const allTagged = tagAndScore(items, cfgAll);
-  items = tagAndScore(items, cfg);
+
+  // Main topic gate: AI relevance judgments (Stage 3) when available, else the
+  // keyword/anchor matcher. `filter.mode` selects; llm requires a judgments file
+  // and falls back to keyword when it is missing.
+  const filterMode = cfg?.filter?.mode || 'keyword';
+  let judgeIndex = null;
+  if ((filterMode === 'llm' || filterMode === 'hybrid') && judgmentsPath) {
+    try {
+      judgeIndex = indexJudgments(
+        parseJudgments(fs.readFileSync(judgmentsPath, 'utf8'))
+      );
+    } catch (e) {
+      console.error(
+        `# filter: could not read judgments ${judgmentsPath}: ${e?.message || e}`
+      );
+    }
+  }
+  if (judgeIndex) {
+    items = applyJudgments(items, judgeIndex, {
+      minRelevance: cfg?.filter?.min_relevance ?? 0.5,
+      requireRelevant: cfg?.output?.require_topic_match === true,
+      boost: cfg?.filter?.relevance_boost ?? 1.0,
+    });
+  } else {
+    if (filterMode === 'llm') {
+      console.error(
+        '# filter: mode=llm but no --judgments file; falling back to keyword gate'
+      );
+    }
+    items = tagAndScore(items, cfg);
+  }
 
   const recommended = pickRecommended(allTagged, cfg);
 
