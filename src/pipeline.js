@@ -10,12 +10,9 @@ import { ReachConfig } from './reach/config.js';
 import { dedupItems } from './dedup.js';
 import { filterXNoise } from './filters.js';
 import { unfurlUrl } from './unfurl.js';
-import { rankItems } from './rank.js';
-import { tagAndScore } from './tagging.js';
-import { pickRecommended } from './recommend.js';
 import { buildCandidates, serializeCandidates } from './candidates.js';
-import { parseJudgments, indexJudgments, applyJudgments } from './judgments.js';
-import { trimByPlatform } from './trim.js';
+import { parseJudgments, indexJudgments } from './judgments.js';
+import { assembleDigest } from './assemble.js';
 import { renderDigestMarkdown } from './render.js';
 
 export async function runDigest({
@@ -245,22 +242,9 @@ export async function runDigest({
     }
   }
 
-  // Rank (base)
-  items = rankItems(items, cfg);
-
-  // Tagging & topic boosts
-  // We need two views:
-  // - allTagged: for recommendation (topic match NOT required)
-  // - items: the main output, which may require topic match
-  const cfgAll = {
-    ...cfg,
-    output: { ...(cfg.output || {}), require_topic_match: false },
-  };
-  const allTagged = tagAndScore(items, cfgAll);
-
-  // Main topic gate: AI relevance judgments (Stage 3) when available, else the
-  // keyword/anchor matcher. `filter.mode` selects; llm requires a judgments file
-  // and falls back to keyword when it is missing.
+  // Resolve the relevance gate input (I/O stays in the shell). AI judgments
+  // when filter.mode is llm/hybrid and a judgments file is present; otherwise
+  // null → assembleDigest uses the keyword matcher.
   const filterMode = cfg?.filter?.mode || 'keyword';
   let judgeIndex = null;
   if ((filterMode === 'llm' || filterMode === 'hybrid') && judgmentsPath) {
@@ -274,54 +258,16 @@ export async function runDigest({
       );
     }
   }
-  if (judgeIndex) {
-    items = applyJudgments(items, judgeIndex, {
-      minRelevance: cfg?.filter?.min_relevance ?? 0.5,
-      requireRelevant: cfg?.output?.require_topic_match === true,
-      boost: cfg?.filter?.relevance_boost ?? 1.0,
-    });
-  } else {
-    if (filterMode === 'llm') {
-      console.error(
-        '# filter: mode=llm but no --judgments file; falling back to keyword gate'
-      );
-    }
-    items = tagAndScore(items, cfg);
+  if (filterMode === 'llm' && !judgeIndex) {
+    console.error(
+      '# filter: mode=llm but no --judgments file; falling back to keyword gate'
+    );
   }
 
-  const recommended = pickRecommended(allTagged, cfg);
-
-  // Retweet penalty (after topic boosts)
-  const xCfg = cfg?.platforms?.x?.following || {};
-  const includeRT = xCfg.include_retweets !== false;
-  const rtPenalty =
-    typeof xCfg.retweet_penalty === 'number' ? xCfg.retweet_penalty : 1.0;
-  const maxRt =
-    typeof xCfg.max_retweets === 'number' ? xCfg.max_retweets : Infinity;
-  let rtCount = 0;
-  items = items
-    .filter((it) => {
-      if (it.platform !== 'x') return true;
-      const isRT = /^RT\s+@/i.test(it.text || '');
-      if (!includeRT && isRT) return false;
-      if (isRT) {
-        rtCount += 1;
-        if (rtCount > maxRt) return false;
-      }
-      return true;
-    })
-    .map((it) => {
-      if (it.platform !== 'x') return it;
-      const isRT = /^RT\s+@/i.test(it.text || '');
-      if (!isRT) return it;
-      return { ...it, score: (it.score || 0) * rtPenalty };
-    });
-
-  // re-sort because boosts/penalties changed scores
-  items = items.sort((a, b) => (b.score || 0) - (a.score || 0));
-
-  // trim
-  items = trimByPlatform(items, cfg);
+  // Pure core: rank → topic/relevance gate → recommended → retweet policy → trim.
+  const assembled = assembleDigest({ items, cfg, judgeIndex });
+  items = assembled.items;
+  const recommended = assembled.recommended;
 
   // Persist JSONL
   const itemsPath = path.join(outDir, `items-${date}.jsonl`);
