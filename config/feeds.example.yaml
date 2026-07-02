@@ -116,6 +116,35 @@ platforms:
       limit: 20
       tags: [ai]
 
+  # Public tech/AI feeds served via OpenCLI (no site login, but still desktop-only
+  # — the OpenCLI health check gates them). Config key = channel name.
+  github-trending:
+    reach:
+      enabled: false
+      mode: trending # `repos` — no query
+      limit: 25
+      tags: [tech, oss]
+  arxiv:
+    reach:
+      enabled: false
+      mode: search # search-only
+      query: 'large language model agents'
+      limit: 20
+      tags: [ai, research]
+  lesswrong:
+    reach:
+      enabled: false
+      mode: trending # frontpage (feed) | top (trending)
+      limit: 20
+      tags: [ai, alignment]
+  stackoverflow:
+    reach:
+      enabled: false
+      mode: search # hot (trending) | search
+      query: 'langchain'
+      limit: 20
+      tags: [tech, dev]
+
 # Default topics: keep MVP digest focused on agentic AI + OpenClaw.
 # Users can edit/replace this list.
 topics:

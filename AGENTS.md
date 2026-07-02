@@ -18,14 +18,15 @@ Two ways to integrate, pick one:
 
 ## Capability tiers (what works where)
 
-| Tier                   | Sources                                                                                            | Requirement                                                             | CI / headless   |
-| ---------------------- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | --------------- |
-| **tier-0 (public)**    | RSS, V2EX, Hacker News, 36Kr, X-via-`bird`                                                         | none (or `bird` cookies for X)                                          | ✅ works        |
-| **reach (auth-gated)** | YouTube, Twitter, Reddit, Bilibili, Xiaohongshu, Weibo, LinkedIn, Xueqiu, TikTok, Substack, … (16) | OpenCLI + its Chrome extension, logged into the sites, **desktop only** | ❌ desktop only |
+| Tier                    | Sources                                                                                                                                                                                                                                          | Requirement                                                                                                          | CI / headless   |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- | --------------- |
+| **tier-0 (public)**     | RSS, V2EX, Hacker News, 36Kr, X-via-`bird`                                                                                                                                                                                                       | none (or `bird` cookies for X)                                                                                       | ✅ works        |
+| **reach (via OpenCLI)** | YouTube, Twitter, Reddit, Bilibili, Xiaohongshu, Weibo, Zhihu, Medium, Jike, LINUX DO, GitHub Trending, arXiv, dblp, Google Scholar, PubMed, Stack Overflow, Lobsters, DEV, LessWrong, OpenReview, AIbase, Toutiao, BBC, Bloomberg, … (34 total) | OpenCLI + its Chrome extension; **desktop only**. Auth-gated sites also need a logged-in session (~17 need no login) | ❌ desktop only |
 
 An agent running in a headless/CI/cloud environment can only use tier-0. The
-reach layer drives a real logged-in Chrome and cannot run headless (see
-`docs/adr/0001-*`). Check reach health with `node bin/digest reach doctor`.
+reach layer drives Chrome via OpenCLI and cannot run headless — even the
+no-login channels (GitHub Trending, arXiv, …) are gated by the OpenCLI health
+check (see `docs/adr/0001-*`). Check reach health with `node bin/digest reach doctor`.
 
 ---
 

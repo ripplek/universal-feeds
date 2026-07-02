@@ -15,9 +15,12 @@ OpenCLI's browser bridge (the "reach" layer) instead of juggling API tokens.
 ## What it does
 
 - **Sources** — X (via `bird` or reach), RSS packs, V2EX natively;
-  plus 16 auth-gated platforms through the reach layer: YouTube, Twitter,
+  plus 34 platforms through the reach layer (OpenCLI, desktop): YouTube, Twitter,
   Reddit, Bilibili, Xiaohongshu, Facebook, Instagram, LinkedIn, Xueqiu, Weibo,
-  Hacker News, Product Hunt, 36Kr, Juejin, TikTok, Substack.
+  Zhihu, Medium, Jike, LINUX DO, and public tech/AI/research feeds — GitHub
+  Trending, arXiv, dblp, Google Scholar, PubMed, Stack Overflow, Lobsters, DEV,
+  LessWrong, OpenReview, AIbase, Toutiao, BBC, Bloomberg, Hacker News, Product
+  Hunt, 36Kr, Juejin, TikTok, Substack.
 - **One schema** — every source normalizes to `FeedItem` (see `docs/SCHEMA.md`),
   so ranking, de-dup, and rendering don't care where an item came from.
 - **Two ways to filter** — a keyword/anchor matcher (default, zero-config), or

@@ -13,8 +13,10 @@
 ## 能做什么
 
 - **数据源** —— 原生支持 X（`bird` 或 reach）、RSS 源包、V2EX；
-  再加 reach 层的 16 个需登录平台：YouTube、Twitter、Reddit、B 站、小红书、Facebook、Instagram、
-  LinkedIn、雪球、微博、Hacker News、Product Hunt、36 氪、掘金、TikTok、Substack。
+  再加 reach 层的 34 个平台（OpenCLI，桌面端）：YouTube、Twitter、Reddit、B 站、小红书、Facebook、Instagram、
+  LinkedIn、雪球、微博、知乎、Medium、即刻、LINUX DO，以及免登录的科技/AI/学术源 ——
+  GitHub Trending、arXiv、dblp、Google Scholar、PubMed、Stack Overflow、Lobsters、DEV、LessWrong、
+  OpenReview、AIbase、今日头条、BBC、Bloomberg、Hacker News、Product Hunt、36 氪、掘金、TikTok、Substack。
 - **统一结构** —— 每个源都归一到 `FeedItem`（见 `docs/SCHEMA.md`），排序、去重、渲染
   都不用关心条目来自哪里。
 - **两种过滤** —— 默认是关键词/anchor 匹配（零配置）；也可以让 Clawdbot agent 按一段

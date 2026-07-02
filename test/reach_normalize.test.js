@@ -259,6 +259,126 @@ test('english relative time ("2 hours ago") anchored to fetchedAt', () => {
   assert.equal(it.publishedAt, '2026-07-01T10:00:00.000Z');
 });
 
+test('github-trending repo row (repo→title, description→text, stars→like, forks→repost)', () => {
+  const row = {
+    rank: 1,
+    repo: 'openai/whisper',
+    description: 'Robust Speech Recognition',
+    language: 'Python',
+    stars: 68000,
+    forks: 8000,
+    url: 'https://github.com/openai/whisper',
+  };
+  const it = normalizeRow(row, { platform: 'github', sourceType: 'trending' });
+  assert.equal(it.title, 'openai/whisper');
+  assert.equal(it.text, 'Robust Speech Recognition');
+  assert.equal(it.metrics.like, 68000);
+  assert.equal(it.metrics.repost, 8000);
+});
+
+test('arxiv search row (authors→author, published→ISO)', () => {
+  const row = {
+    id: '2404.00001',
+    title: 'A Study of LLMs',
+    authors: 'Alice, Bob',
+    published: '2026-06-20',
+    primary_category: 'cs.CL',
+    url: 'https://arxiv.org/abs/2404.00001',
+  };
+  const it = normalizeRow(row, { platform: 'arxiv', sourceType: 'search' });
+  assert.equal(it.author.name, 'Alice, Bob');
+  assert.match(it.publishedAt, /^2026-06-20/);
+});
+
+test('stackoverflow row (answers→reply, creation_date→ISO, score→like)', () => {
+  const row = {
+    rank: 1,
+    id: 42,
+    title: 'How to X?',
+    score: 15,
+    answers: 3,
+    views: 1200,
+    creation_date: '2026-06-30T10:00:00Z',
+    url: 'https://stackoverflow.com/q/42',
+  };
+  const it = normalizeRow(row, { platform: 'stackoverflow' });
+  assert.equal(it.metrics.like, 15);
+  assert.equal(it.metrics.reply, 3);
+  assert.equal(it.metrics.view, 1200);
+  assert.match(it.publishedAt, /^2026-06-30/);
+});
+
+test('lesswrong row (karma→like), hf models row (downloads→view, lastModified→ISO)', () => {
+  const lw = normalizeRow(
+    {
+      title: 'On Alignment',
+      author: 'ey',
+      karma: 240,
+      comments: 30,
+      url: 'https://lesswrong.com/p/1',
+    },
+    { platform: 'lesswrong' }
+  );
+  assert.equal(lw.metrics.like, 240);
+  assert.equal(lw.metrics.reply, 30);
+  const hf = normalizeRow(
+    {
+      rank: 1,
+      id: 'meta/llama',
+      author: 'meta',
+      downloads: 900000,
+      likes: 1200,
+      lastModified: '2026-06-25',
+      url: 'https://huggingface.co/meta/llama',
+    },
+    { platform: 'hf', sourceType: 'trending' }
+  );
+  assert.equal(hf.metrics.view, 900000);
+  assert.equal(hf.metrics.like, 1200);
+  assert.match(hf.publishedAt, /^2026-06-25/);
+});
+
+test('google-scholar row (authors→author, cited→like) and pubmed (pmid→id)', () => {
+  const gs = normalizeRow(
+    {
+      rank: 1,
+      title: 'Understanding LLM agents',
+      authors: 'A. Researcher',
+      cited: 561,
+      year: '2026',
+      url: 'https://scholar.google.com/x',
+    },
+    { platform: 'google-scholar', sourceType: 'search' }
+  );
+  assert.equal(gs.author.name, 'A. Researcher');
+  assert.equal(gs.metrics.like, 561);
+  const pm = normalizeRow(
+    {
+      rank: 1,
+      pmid: '39876543',
+      title: 'Deep learning in radiology',
+      journal: 'Nature',
+      url: 'https://pubmed.ncbi.nlm.nih.gov/39876543',
+    },
+    { platform: 'pubmed', sourceType: 'search' }
+  );
+  assert.equal(pm.id, '39876543');
+});
+
+test('bloomberg RSS row (link→url, summary→text)', () => {
+  const it = normalizeRow(
+    {
+      title: 'Markets move',
+      summary: 'A short summary of the story.',
+      link: 'https://www.bloomberg.com/news/articles/1',
+      mediaLinks: [],
+    },
+    { platform: 'bloomberg', sourceType: 'trending' }
+  );
+  assert.equal(it.url, 'https://www.bloomberg.com/news/articles/1');
+  assert.equal(it.text, 'A short summary of the story.');
+});
+
 test('numeric strings with commas parse to numbers', () => {
   const it = normalizeRow(
     { title: 't', url: 'u://x', play: '1,234' },
