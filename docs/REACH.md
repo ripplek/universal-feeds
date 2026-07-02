@@ -24,7 +24,7 @@ for why fetching runs on the desktop.
 
 > OpenCLI is **desktop-only (no headless)**. Run the digest on the machine where
 > Chrome is logged in. Headless/CI environments can only run tier-0 sources
-> (RSS / YouTube / V2EX).
+> (RSS / V2EX); YouTube now flows through this reach layer.
 
 ## Commands
 
