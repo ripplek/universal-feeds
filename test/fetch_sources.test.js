@@ -8,14 +8,21 @@ test('fetchAllSources aggregates enabled sources in order', async () => {
     { id: 'b', enabled: () => false, fetch: () => [{ id: 3 }] },
     { id: 'c', enabled: () => true, fetch: async () => [{ id: 4 }] },
   ];
-  const out = await fetchAllSources({}, {}, sources);
+  const { items, perSource } = await fetchAllSources({}, {}, sources);
   assert.deepEqual(
-    out.map((x) => x.id),
+    items.map((x) => x.id),
     [1, 2, 4]
+  );
+  assert.deepEqual(
+    perSource.map((p) => [p.source, p.fetched]),
+    [
+      ['a', 2],
+      ['c', 1],
+    ]
   );
 });
 
-test('a throwing source is isolated (best-effort) — others still contribute', async () => {
+test('a throwing source is isolated and captured as a structured error', async () => {
   const sources = [
     {
       id: 'boom',
@@ -26,11 +33,14 @@ test('a throwing source is isolated (best-effort) — others still contribute', 
     },
     { id: 'ok', enabled: () => true, fetch: () => [{ id: 9 }] },
   ];
-  const out = await fetchAllSources({}, {}, sources);
+  const { items, perSource } = await fetchAllSources({}, {}, sources);
   assert.deepEqual(
-    out.map((x) => x.id),
+    items.map((x) => x.id),
     [9]
   );
+  const boom = perSource.find((p) => p.source === 'boom');
+  assert.equal(boom.fetched, 0);
+  assert.match(boom.error, /down/);
 });
 
 test('a throwing enabled() predicate does not abort the run', async () => {
@@ -44,23 +54,51 @@ test('a throwing enabled() predicate does not abort the run', async () => {
     },
     { id: 'ok', enabled: () => true, fetch: () => [{ id: 2 }] },
   ];
-  const out = await fetchAllSources({}, {}, sources);
+  const { items } = await fetchAllSources({}, {}, sources);
   assert.deepEqual(
-    out.map((x) => x.id),
+    items.map((x) => x.id),
     [2]
   );
 });
 
-test('non-array fetch result is ignored', async () => {
+test('non-array fetch result yields a zero-count perSource entry', async () => {
   const sources = [
     { id: 'weird', enabled: () => true, fetch: () => null },
     { id: 'ok', enabled: () => true, fetch: () => [{ id: 1 }] },
   ];
-  const out = await fetchAllSources({}, {}, sources);
+  const { items, perSource } = await fetchAllSources({}, {}, sources);
   assert.deepEqual(
-    out.map((x) => x.id),
+    items.map((x) => x.id),
     [1]
   );
+  const weird = perSource.find((p) => p.source === 'weird');
+  assert.equal(weird.fetched, 0);
+});
+
+test('a source may return {items, perSource} for per-channel detail', async () => {
+  const sources = [
+    {
+      id: 'multi',
+      enabled: () => true,
+      fetch: () => ({
+        items: [{ id: 1 }],
+        perSource: [
+          { source: 'multi', platform: 'ch-a', channel: 'ch-a', fetched: 1 },
+          {
+            source: 'multi',
+            platform: 'ch-b',
+            channel: 'ch-b',
+            fetched: 0,
+            outcome: 'unavailable',
+          },
+        ],
+      }),
+    },
+  ];
+  const { items, perSource } = await fetchAllSources({}, {}, sources);
+  assert.equal(items.length, 1);
+  assert.equal(perSource.length, 2);
+  assert.equal(perSource[1].outcome, 'unavailable');
 });
 
 test('SOURCES registry has the expected ids in dedup order', () => {

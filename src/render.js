@@ -1,4 +1,6 @@
 import { decodeEntities } from './text.js';
+import { candidateKey } from './candidates.js';
+import { capDiversity } from './recommend.js';
 
 function h(cfg, en, zh) {
   return cfg?.output?.language === 'zh' ? zh : en;
@@ -157,22 +159,22 @@ function fmtReaderItem(item, cfg) {
   const meta = [platformLabel(cfg, item.platform), readerDate(item.publishedAt)]
     .filter(Boolean)
     .join(', ');
-  const link = item?.debug?.unfurl?.finalUrl || item.url;
+  const link = displayUrl(item);
   return `- ${head}${author ? ` — ${readerText(author)}` : ''}${meta ? ` (${meta})` : ''}\n  ${link}`;
 }
 
-// Reader-facing digest: clean, deduplicated, organized by topic. Distinct from
-// renderDigestMarkdown (the inspection view) — no scores, tag lists, keyword
-// hits, coverage counts, or platform dump. Same pure (items, cfg) → Markdown
-// contract, so it's exercised the same way as the inspection renderer.
-export function renderReaderDigest(
-  items,
-  { cfg, date, fetchedAt, recommended = [] }
-) {
-  const title = h(cfg, `Daily Digest — ${date}`, `每日简报 — ${date}`);
-  const genLabel = h(cfg, 'Generated', '生成时间');
-  let md = `# ${title}\n\n${genLabel}: ${readerTime(fetchedAt)}\n\n`;
+// The URL a reader actually sees (unfurled when available). Dedup must key on
+// THIS, not the raw item.url — two items with different raw urls can unfurl to
+// the same article and would otherwise both render.
+function displayUrl(item) {
+  return item?.debug?.unfurl?.finalUrl || item.url || '';
+}
 
+// Select the reader view's topic sections and report exactly what got
+// rendered (ids + urls), so the recommended residual can be computed against
+// the real main list — business selection lives here, not in the Markdown
+// emitter below.
+export function selectReaderSections(items, cfg) {
   const topics = Array.isArray(cfg?.topics) ? cfg.topics : [];
   const topicNames = topics.map((t) => t.name).filter(Boolean);
   const perTopic = cfg?.output?.max_per_topic || 8;
@@ -184,6 +186,10 @@ export function renderReaderDigest(
   const groups = new Map();
   for (const n of topicNames) groups.set(n, []);
   const entityItems = [];
+  // Judge-approved items that match no configured topic/entity. Kept (not
+  // dropped) so a relevant item the agent tagged with an off-list topic still
+  // reaches the reader — see assemble.js `readerRelevant`.
+  const otherRelevant = [];
   for (const it of Array.isArray(items) ? items : []) {
     const tags = it.tags || [];
     const primary = topicNames.find((n) => tags.includes(n));
@@ -194,7 +200,11 @@ export function renderReaderDigest(
     const hasEntity =
       tags.includes(ENT_TOPIC) ||
       tags.some((t) => typeof t === 'string' && t.startsWith('entity:'));
-    if (hasEntity) entityItems.push(it);
+    if (hasEntity) {
+      entityItems.push(it);
+      continue;
+    }
+    if (it?.debug?.readerRelevant === true) otherRelevant.push(it);
   }
 
   const sections = [];
@@ -208,13 +218,57 @@ export function renderReaderDigest(
       items: entityItems.slice(0, perTopic),
     });
   }
+  if (otherRelevant.length) {
+    sections.push({
+      label: h(cfg, 'Other relevant', '其他相关'),
+      items: otherRelevant.slice(0, perTopic),
+    });
+  }
 
+  const renderedIds = new Set();
   const renderedUrls = new Set();
+  for (const s of sections) {
+    for (const it of s.items) {
+      renderedIds.add(candidateKey(it));
+      const u = displayUrl(it);
+      if (u) renderedUrls.add(u);
+    }
+  }
+  return { sections, renderedIds, renderedUrls };
+}
+
+// Reader-facing digest: clean, deduplicated, organized by topic. Distinct from
+// renderDigestMarkdown (the inspection view) — no scores, tag lists, keyword
+// hits, coverage counts, or platform dump. Same pure (items, cfg) → Markdown
+// contract, so it's exercised the same way as the inspection renderer.
+// `recommendedJudged`: recommended is the uncapped judged-passing pool — take
+// the residual (dual-key: id AND url) and apply the section's own caps here.
+// `healthLine`: precomputed source-health summary rendered under the header.
+export function renderReaderDigest(
+  items,
+  {
+    cfg,
+    date,
+    fetchedAt,
+    recommended = [],
+    recommendedJudged = false,
+    healthLine = '',
+  }
+) {
+  const title = h(cfg, `Daily Digest — ${date}`, `每日简报 — ${date}`);
+  const genLabel = h(cfg, 'Generated', '生成时间');
+  let md = `# ${title}\n\n${genLabel}: ${readerTime(fetchedAt)}\n\n`;
+  if (healthLine) md += `> ${healthLine}\n\n`;
+
+  const { sections, renderedIds, renderedUrls } = selectReaderSections(
+    items,
+    cfg
+  );
+
   for (const s of sections) {
     md += `## ${s.label}\n\n`;
     for (const it of s.items) {
       md += fmtReaderItem(it, cfg) + '\n';
-      if (it.url) renderedUrls.add(it.url);
     }
     md += `\n`;
   }
@@ -224,9 +278,25 @@ export function renderReaderDigest(
 
   const recEnabled = cfg?.recommended?.enabled !== false;
   if (recEnabled && Array.isArray(recommended) && recommended.length) {
-    const rec = recommended.filter((it) => it.url && !renderedUrls.has(it.url));
+    let rec = recommended.filter((it) => {
+      const u = displayUrl(it);
+      return u && !renderedUrls.has(u) && !renderedIds.has(candidateKey(it));
+    });
+    if (recommendedJudged) {
+      const rcfg = cfg?.recommended || {};
+      rec = capDiversity(rec, {
+        maxPerSource: rcfg.max_per_source ?? 2,
+        maxPerDomain: rcfg.max_per_domain ?? 3,
+      }).slice(0, rcfg.max_items ?? 10);
+    }
     if (rec.length) {
-      md += `## ${h(cfg, 'Recommended (24h)', '推荐（24h）')}\n\n`;
+      // An explicitly unfiltered pool is labeled as such — the reader must
+      // never mistake an engagement-only list for AI-judged content.
+      const label =
+        cfg?.recommended?.unfiltered === true
+          ? h(cfg, 'Unfiltered Trending (24h)', '未过滤热榜（24h）')
+          : h(cfg, 'Recommended (24h)', '推荐（24h）');
+      md += `## ${label}\n\n`;
       md += rec.map((it) => fmtReaderItem(it, cfg)).join('\n') + '\n';
     }
   }

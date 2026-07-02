@@ -87,21 +87,31 @@ export function validateJudgments(
     }
 
     let bad = false;
-    if ('score' in j) {
-      if (
-        typeof j.score !== 'number' ||
-        !Number.isFinite(j.score) ||
-        j.score < 0 ||
-        j.score > 1
-      ) {
-        counts.outOfRange++;
-        warnings.push(
-          `score out of range [0,1] for ${id}: ${JSON.stringify(j.score)}`
-        );
-        bad = true;
-      }
+    // `relevant` and `score` are required (see JUDGMENT_SCHEMA.required). Absence
+    // is malformed, not "optional" — otherwise an id-only judgment sails through
+    // validation AND through applyJudgments' relevance gate (which only drops on
+    // an explicit false / low score), silently keeping every candidate.
+    if (!('score' in j)) {
+      counts.malformed++;
+      warnings.push(`missing required field \`score\` for ${id}`);
+      bad = true;
+    } else if (
+      typeof j.score !== 'number' ||
+      !Number.isFinite(j.score) ||
+      j.score < 0 ||
+      j.score > 1
+    ) {
+      counts.outOfRange++;
+      warnings.push(
+        `score out of range [0,1] for ${id}: ${JSON.stringify(j.score)}`
+      );
+      bad = true;
     }
-    if ('relevant' in j && typeof j.relevant !== 'boolean') {
+    if (!('relevant' in j)) {
+      counts.malformed++;
+      warnings.push(`missing required field \`relevant\` for ${id}`);
+      bad = true;
+    } else if (typeof j.relevant !== 'boolean') {
       counts.malformed++;
       warnings.push(
         `relevant must be boolean for ${id}: ${JSON.stringify(j.relevant)}`

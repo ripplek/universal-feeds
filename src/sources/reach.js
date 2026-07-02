@@ -32,27 +32,36 @@ export async function fetchViaReach({
   fetchedAt,
   exec, // injected OpenCLI executor (tests)
   statusOf, // injected opencli status probe (tests)
+  onOutcome, // structured fetch outcome for the health seam (non-throw failures)
 }) {
   const ch = getChannel(platform);
   if (!ch) throw new Error(`reach: unknown platform '${platform}'`);
 
   const health = checkChannel(ch, config, statusOf ? { statusOf } : {});
   if (health.status !== 'ok') {
+    const message = health.message.split('\n')[0];
     console.error(
-      `# reach: ${platform} unavailable (${health.status}) — skipping. ${health.message.split('\n')[0]}`
+      `# reach: ${platform} unavailable (${health.status}) — skipping. ${message}`
     );
+    onOutcome?.({ status: 'unavailable', message });
     return [];
   }
 
   const spec = resolveCommand(ch, mode, query);
   if (!spec) {
     console.error(`# reach: ${platform} has no command for mode '${mode}'`);
+    onOutcome?.({
+      status: 'no-command',
+      message: `no command for mode '${mode}'`,
+    });
     return [];
   }
   if (spec.key === 'search' && !query) {
     console.error(`# reach: ${platform} search needs a query — skipping.`);
+    onOutcome?.({ status: 'missing-query', message: 'search needs a query' });
     return [];
   }
+  onOutcome?.({ status: 'ok' });
 
   const rows = await runOpenCli({
     platform: ch.name,

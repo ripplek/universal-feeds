@@ -5,13 +5,36 @@
 ```
 Preferences (YAML/JSON)
   └─ compile → platform queries
-        └─ Adapters fetch items (trending/following/search)
-              └─ Normalize → FeedItem[]
-                    ├─ De-dup
-                    ├─ Rank
-                    ├─ (Optional) Summarize
-                    └─ Render → Markdown digest + JSONL log
+        └─ Adapters fetch items (trending/following/search)   ─┐ fetchAllSources
+              └─ Normalize → FeedItem[] + perSource[] counts   │ → {items, perSource}
+                    ├─ De-dup                                  │
+                    ├─ Recency filter (anchored to fetchedAt)  │
+                    └─ Enrich (X unfurl, I/O)                 ─┘
+                          └─ freeze run snapshot → out/runs/<runId>/
+                                ├─ items.jsonl   (immutable base pool)
+                                ├─ meta.json     (fetchedAt, config hashes, perSource)
+                                ├─ candidates.jsonl + judging-task.json  (stage ①)
+                                ├─ judgments.jsonl                       (agent writes)
+                                └─ run-report.json  (terminal: status/health)
+                          └─ render (from snapshot, now = fetchedAt)
+                                ├─ Rank → topic/relevance gate → recommended residual
+                                ├─ Render → reader digest + inspection + items JSONL
+                                └─ sourceHealth → status / health contract
 ```
+
+**Run snapshot** is the seam that makes candidate drift structurally impossible:
+one fetch freezes the base pool, and candidate emission, judgment validation, and
+rendering all read that same `items.jsonl` — the render never re-fetches. The
+`runId` (`<date>-<seq>`) binds the whole loop; judgments live in the run dir so
+their path _is_ the binding. See `src/run_store.js`.
+
+**Health contract** (`src/health.js`): every enabled source contributes a
+`perSource` entry; severity is judged on `fetched` (0 items = `warning`, fetch
+error / unavailable channel = `error`), optional sources demote to `info`. The
+top-level `health` (`ok`/`warning`/`degraded`) is orthogonal to the process
+`status` (`ok`/`awaiting_judgments`/`error`) — a source can fail without the run
+failing. This is what turns "zero silent failures" from a slogan into a testable
+invariant.
 
 ## Components
 

@@ -117,11 +117,14 @@ three-step hand-off — you run the judging middle step:
    node bin/digest --config config/feeds.yaml --stage candidates
    ```
 
-   Writes `out/candidates-<date>.jsonl`, one compact item per line:
+   Writes `out/runs/<runId>/candidates.jsonl`, one compact item per line:
    `{"id":"<platform:id>","platform":"…","title":"…","text":"…","url":"…"}`,
-   plus `out/judging-task-<date>.json` — a self-contained brief (profile, topic
-   whitelist, output schema, paths) you can judge from without re-reading this
-   file.
+   plus `out/runs/<runId>/judging-task.json` — a self-contained brief (runId,
+   profile, topic whitelist, output schema, paths) you can judge from without
+   re-reading this file. The `--json` result carries the `runId`; take exact
+   paths from the result and from `judging-task.json` — never hardcode them.
+   A repeat call the same day reuses the run (add `--refetch` to force a fresh
+   fetch).
 
 2. **Judge each candidate** against the interest profile in `feeds.yaml`
    (`filter.profile`). **Use `claude-haiku-4-5`** for this bulk classification —
@@ -140,20 +143,28 @@ three-step hand-off — you run the judging middle step:
      also emit `title_translated`: the title in that language (echo unchanged if
      already in it; keep product names/proper nouns as-is). It makes the reader
      digest single-language.
-     Write all objects (JSONL or a JSON array) to `out/judgments-<date>.jsonl`.
+     Write all objects (JSONL or a JSON array) to the run's judgments path —
+     the `output.path` in `judging-task.json` (`out/runs/<runId>/judgments.jsonl`).
+     That path is what binds your judgments to this exact run.
 
 3. **Render** — run (optionally dry-run `--validate-judgments <file>` first to
    catch malformed / unknown-id / out-of-range judgments before rendering):
    ```bash
-   node bin/digest --config config/feeds.yaml --judgments out/judgments-<date>.jsonl
+   node bin/digest --config config/feeds.yaml --judgments out/runs/<runId>/judgments.jsonl
    ```
-   The digest keeps items you marked relevant (score ≥ `filter.min_relevance`
-   when `output.require_topic_match: true`), tags them with your `topics`, folds
-   `score` into ranking, and renders `out/digest-<date>.md`.
+   The render is bound to the run the judgments live in (no re-fetch, no drift);
+   `--run <runId>` overrides. It keeps items you marked relevant (score ≥
+   `filter.min_relevance` when `output.require_topic_match: true`), tags them with
+   your `topics`, folds `score` into ranking, and renders `out/digest-<date>.md`.
+   A malformed/unreadable judgments file, or one that fails validation, is a hard
+   error — it will not silently fall back.
 
-Full contract: `docs/FILTERING.md`. If no judgments file is supplied while
-`mode: llm`, the digest falls back to the keyword gate (so CI / offline / no-agent
-runs still work).
+Or run the whole loop as a state machine: `node bin/digest daily …` returns
+`awaiting_judgments` (judge, then re-run) or renders directly in keyword mode.
+
+Full contract: `docs/FILTERING.md`. To run without judging (CI / offline /
+no-agent), use the keyword path: `--stage full` with no `--judgments`, or
+`daily --no-judge`.
 
 ## Notes
 

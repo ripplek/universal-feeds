@@ -8,7 +8,6 @@
 import fs from 'node:fs';
 import {
   resolveRunContext,
-  materializeJudgments,
   emitCandidates,
   runFullDigest,
   applyJudgments,
@@ -16,20 +15,28 @@ import {
 import { ReachConfig } from '../reach/config.js';
 import { fetchViaReach } from '../sources/reach.js';
 
-export async function runDigestTool(args = {}) {
-  const ctx = resolveRunContext(args.config, args.date);
-  const judgmentsPath = materializeJudgments({
-    judgments: args.judgments,
-    judgmentsPath: args.judgmentsPath,
-    outDir: ctx.outDir,
-    date: ctx.date,
+const ctxOf = (args) =>
+  resolveRunContext(args.config, args.date, {
+    explicitConfig: typeof args.config === 'string' && args.config.length > 0,
   });
-  return runFullDigest(ctx, { judgmentsPath });
+
+export async function runDigestTool(args = {}) {
+  const ctx = ctxOf(args);
+  if (args.judgments != null || args.judgmentsPath) {
+    // Judgments imply the run-bound path — same contract as apply_judgments.
+    return applyJudgments(ctx, {
+      judgments: args.judgments,
+      judgmentsPath: args.judgmentsPath,
+      runId: args.runId,
+      allowConfigDrift: args.allowConfigDrift === true,
+    });
+  }
+  return runFullDigest(ctx, {});
 }
 
 export async function emitCandidatesTool(args = {}) {
-  const ctx = resolveRunContext(args.config, args.date);
-  const out = await emitCandidates(ctx);
+  const ctx = ctxOf(args);
+  const out = await emitCandidates(ctx, { refetch: args.refetch === true });
   // Inline the judging task so an MCP client needn't read the file separately.
   try {
     out.judgingTask = JSON.parse(fs.readFileSync(out.judgingTaskPath, 'utf8'));
@@ -40,11 +47,14 @@ export async function emitCandidatesTool(args = {}) {
 }
 
 export async function applyJudgmentsTool(args = {}) {
-  const ctx = resolveRunContext(args.config, args.date);
-  // Single fetch: validate + render share one candidate set (see operations.js).
+  const ctx = ctxOf(args);
+  // Bound to the run the judgments were written against (runId required in
+  // llm/hybrid mode — echo judgingTask.runId; "today" may have rolled over).
   return applyJudgments(ctx, {
     judgments: args.judgments,
     judgmentsPath: args.judgmentsPath,
+    runId: args.runId,
+    allowConfigDrift: args.allowConfigDrift === true,
   });
 }
 
@@ -85,8 +95,13 @@ export const TOOLS = [
         judgments: {
           type: 'array',
           description:
-            'Inline judgments (array of {id,relevant,score,...}); written to out/ and applied.',
+            'Inline judgments (array of {id,relevant,score,...}); written into the run dir and applied.',
           items: { type: 'object' },
+        },
+        runId: {
+          type: 'string',
+          description:
+            'Run to bind to (from emit_candidates / judgingTask.runId). Required with judgments in llm/hybrid mode.',
         },
       },
     },
@@ -95,12 +110,17 @@ export const TOOLS = [
   {
     name: 'emit_candidates',
     description:
-      'Emit the compact candidate list (post cheap pre-filters) plus a self-contained judging task. Step 1 of AI relevance filtering.',
+      "Create (or reuse) the day's run snapshot and emit the candidate list plus a self-contained judging task. Step 1 of AI relevance filtering. Returns runId — echo it to apply_judgments.",
     inputSchema: {
       type: 'object',
       properties: {
         config: { type: 'string' },
         date: { type: 'string' },
+        refetch: {
+          type: 'boolean',
+          description:
+            "Force a fresh snapshot instead of reusing the day's run.",
+        },
       },
     },
     handler: emitCandidatesTool,
@@ -108,7 +128,7 @@ export const TOOLS = [
   {
     name: 'apply_judgments',
     description:
-      'Validate agent judgments against the current candidates, then render the digest with them. Step 3 of AI relevance filtering.',
+      'Validate agent judgments against their run snapshot, then render the digest. Step 3 of AI relevance filtering. Pass the runId returned by emit_candidates (required in llm/hybrid mode — do not re-resolve "today").',
     inputSchema: {
       type: 'object',
       properties: {
@@ -116,6 +136,15 @@ export const TOOLS = [
         date: { type: 'string' },
         judgmentsPath: { type: 'string' },
         judgments: { type: 'array', items: { type: 'object' } },
+        runId: {
+          type: 'string',
+          description: 'Run to bind to (echo judgingTask.runId).',
+        },
+        allowConfigDrift: {
+          type: 'boolean',
+          description:
+            'Render even if filter/topics config changed since the run was judged.',
+        },
       },
     },
     handler: applyJudgmentsTool,

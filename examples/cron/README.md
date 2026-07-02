@@ -1,8 +1,18 @@
 # Scheduled delivery template
 
-[`daily-digest.sh`](daily-digest.sh) runs the digest on a schedule and hands the
-rendered Markdown to a delivery command of your choosing. Delivery is a **seam**:
-`$UF_DELIVER` is any command that reads the digest on stdin.
+Two entry points, depending on who's driving:
+
+- [`daily-digest.sh`](daily-digest.sh) — a **bare cron** template: runs the
+  digest (keyword path) and pipes the Markdown to a delivery command. Delivery is
+  a **seam**: `$UF_DELIVER` is any command that reads the digest on stdin. Add
+  `--strict-exit` inside the script if you want cron to fail the job when a
+  required source comes up empty.
+- [`agent-session-digest.mjs`](agent-session-digest.mjs) — for a **scheduled
+  agent session** (Clawdbot/Claude). It drives the `daily` state machine and
+  prints a JSON envelope (`action`, `message`, `digestPath`, `health`,
+  `sourceHealth`). On `judge_then_repeat` the agent judges the candidates and
+  re-invokes; on `post` / `post_failure` it posts the message in-chat. This is
+  the AI-judged loop the bare cron can't do (see below).
 
 ## Cron
 
@@ -34,6 +44,8 @@ UF_DELIVER='cat'   # just print it
 ## AI-judged runs
 
 With `filter.mode: llm`, a bare cron run can't judge candidates and falls back to
-the keyword gate. To run the **judged** loop on a schedule, have your agent drive
-the repo (emit → judge → render, see [`../../AGENTS.md`](../../AGENTS.md)); the
-delivery block here still applies to the digest it produces.
+the keyword gate. To run the **judged** loop on a schedule, drive the repo from an
+agent session with [`agent-session-digest.mjs`](agent-session-digest.mjs): it
+returns `awaiting_judgments` with the run's `candidatesPath` + `judgingTaskPath`,
+the agent judges them into the run's `judgments.jsonl`, then re-runs to render and
+post. Full contract in [`../../AGENTS.md`](../../AGENTS.md) (→ `daily`).

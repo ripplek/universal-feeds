@@ -5,18 +5,26 @@ import {
   emitCandidates,
   runFullDigest,
   validateJudgmentsFile,
+  daily,
 } from './operations.js';
 
-function parseArgs(argv) {
+function parseArgs(argv, from = 2) {
   const args = { config: 'config/feeds.yaml', date: 'today' };
-  for (let i = 2; i < argv.length; i++) {
+  for (let i = from; i < argv.length; i++) {
     const a = argv[i];
-    if (a === '--config') args.config = argv[++i] || args.config;
-    else if (a === '--date') args.date = argv[++i] || args.date;
+    if (a === '--config') {
+      args.config = argv[++i] || args.config;
+      args.configExplicit = true;
+    } else if (a === '--date') args.date = argv[++i] || args.date;
     else if (a === '--stage') args.stage = argv[++i] || args.stage;
     else if (a === '--judgments') args.judgments = argv[++i] || args.judgments;
     else if (a === '--validate-judgments')
       args.validateJudgments = argv[++i] || args.validateJudgments;
+    else if (a === '--run') args.run = argv[++i] || args.run;
+    else if (a === '--refetch') args.refetch = true;
+    else if (a === '--no-judge') args.noJudge = true;
+    else if (a === '--allow-config-drift') args.allowConfigDrift = true;
+    else if (a === '--strict-exit') args.strictExit = true;
     else if (a === '--json') args.json = true;
     else if (a === '--help' || a === '-h') args.help = true;
   }
@@ -24,21 +32,28 @@ function parseArgs(argv) {
 }
 
 const HELP = [
-  'Usage: universal-feeds --config <path> [--date today|YYYY-MM-DD] [--json]',
-  '                       [--stage candidates] [--judgments <file>]',
-  '                       [--validate-judgments <file>]',
+  'Usage: universal-feeds [daily] --config <path> [--date today|YYYY-MM-DD] [--json]',
+  '                       [--stage candidates] [--judgments <file>] [--run <runId>]',
+  '                       [--validate-judgments <file>] [--refetch] [--no-judge]',
+  '                       [--allow-config-drift] [--strict-exit]',
   '',
-  'AI relevance filtering (filter.mode: llm): emit candidates, judge them',
-  '  (see AGENTS.md / docs/FILTERING.md), then apply:',
-  '    digest --config c.yaml --stage candidates',
-  '    digest --config c.yaml --judgments out/judgments-<date>.jsonl',
+  'Every fetch freezes a run snapshot under out/runs/<date>-<seq>/; candidates,',
+  'validation and rendering are all bound to that run (no drift).',
+  '',
+  'AI relevance filtering (filter.mode: llm/hybrid):',
+  '    digest --config c.yaml --stage candidates      # creates/reuses the run',
+  '    digest --config c.yaml --judgments out/runs/<runId>/judgments.jsonl',
   "  Validate an agent's judgments before rendering (no digest written):",
-  '    digest --config c.yaml --stage candidates   # emits candidates + judging-task.json',
-  '    digest --config c.yaml --validate-judgments out/judgments-<date>.jsonl',
+  '    digest --config c.yaml --validate-judgments out/runs/<runId>/judgments.jsonl',
+  '',
+  '`daily` is the state machine for scheduled agent sessions:',
+  '  awaiting_judgments → (agent judges) → ok; keyword mode closes in one call.',
   '',
   '--json prints one JSON object to stdout:',
-  '  {status, stage, date, itemsPath, digestPath, candidatesPath, count}',
-  'Exit code is non-zero on failure.',
+  '  {status, health, runId, sourceHealth, digestPath, count, ...}',
+  '  status: ok | awaiting_judgments | error (exit != 0)',
+  '  health: ok | warning | degraded (source-level integrity)',
+  '--strict-exit: also exit non-zero when health >= warning (cron semantics).',
   '',
   'Tip: copy config/feeds.example.yaml to config/feeds.yaml',
 ].join('\n');
@@ -50,7 +65,9 @@ export async function main() {
     return;
   }
 
-  const args = parseArgs(process.argv);
+  const isDaily = process.argv[2] === 'daily';
+  const args = parseArgs(process.argv, isDaily ? 3 : 2);
+  if (isDaily) args.stage = 'daily';
   if (args.help) {
     console.log(HELP);
     return;
@@ -76,13 +93,24 @@ export async function main() {
   }
 }
 
-async function runCli(args) {
-  const ctx = resolveRunContext(args.config, args.date);
+// Cron semantics opt-in: degraded content also fails the invocation.
+function applyStrictExit(args, normalized) {
+  if (!args.strictExit) return;
+  const h = normalized?.health;
+  if (h === 'warning' || h === 'degraded') process.exitCode = 1;
+}
 
-  // --validate-judgments: dry-run gate. No digest is written; exit non-zero on
-  // hard errors (malformed / unknown id / out-of-range score / duplicate).
+async function runCli(args) {
+  const ctx = resolveRunContext(args.config, args.date, {
+    explicitConfig: args.configExplicit === true,
+  });
+
+  // --validate-judgments: dry-run gate against the run snapshot. No fetch, no
+  // digest; exit non-zero on hard errors (malformed / unknown id / duplicate).
   if (args.validateJudgments) {
-    const report = await validateJudgmentsFile(ctx, args.validateJudgments);
+    const report = await validateJudgmentsFile(ctx, args.validateJudgments, {
+      runId: args.run,
+    });
     if (args.json) {
       console.log(
         JSON.stringify({ status: report.ok ? 'ok' : 'error', ...report })
@@ -95,19 +123,44 @@ async function runCli(args) {
   }
 
   const stage = args.stage || 'full';
-  const normalized =
-    stage === 'candidates'
-      ? await emitCandidates(ctx)
-      : await runFullDigest(ctx, { judgmentsPath: args.judgments });
+  let normalized;
+  if (stage === 'daily') {
+    normalized = await daily(ctx, {
+      refetch: args.refetch,
+      noJudge: args.noJudge,
+      allowConfigDrift: args.allowConfigDrift,
+    });
+  } else if (stage === 'candidates') {
+    normalized = await emitCandidates(ctx, { refetch: args.refetch });
+  } else {
+    normalized = await runFullDigest(ctx, {
+      judgmentsPath: args.judgments,
+      runId: args.run,
+      allowConfigDrift: args.allowConfigDrift,
+    });
+  }
 
   if (args.json) {
-    console.log(JSON.stringify(normalized));
+    // judgingTask is inlined for MCP convenience; keep CLI stdout compact.
+    const { judgingTask, ...compact } = normalized;
+    console.log(JSON.stringify(compact));
+    applyStrictExit(args, normalized);
     return;
   }
 
-  if (normalized.candidatesPath) {
+  if (normalized.status === 'awaiting_judgments') {
+    console.log(`Run ${normalized.runId}: awaiting judgments.`);
     console.log(
-      `Wrote: ${normalized.candidatesPath} (${normalized.count} candidates)`
+      `Candidates: ${normalized.candidatesPath} (${normalized.count})`
+    );
+    console.log(`Judging task: ${normalized.judgingTaskPath}`);
+    console.log('Next: judge them, then re-run `daily` (same run picks up).');
+    applyStrictExit(args, normalized);
+    return;
+  }
+  if (normalized.candidatesPath && !normalized.digestPath) {
+    console.log(
+      `Wrote: ${normalized.candidatesPath} (${normalized.count} candidates, run ${normalized.runId})`
     );
     if (normalized.judgingTaskPath) {
       console.log(
@@ -117,8 +170,13 @@ async function runCli(args) {
     console.log(
       'Next: have the agent judge these, then re-run with --judgments <file>.'
     );
+    applyStrictExit(args, normalized);
     return;
   }
   console.log(`Wrote: ${normalized.itemsPath}`);
   console.log(`Wrote: ${normalized.digestPath}`);
+  if (normalized.health && normalized.health !== 'ok') {
+    console.log(`Health: ${normalized.health} — see ${normalized.reportPath}`);
+  }
+  applyStrictExit(args, normalized);
 }

@@ -72,12 +72,25 @@ export function languageName(code) {
 // can read this one JSON object and judge without loading any skill: it carries
 // the interest profile, the topic whitelist, the exact output schema, and the
 // input/output paths. See docs/FILTERING.md and AGENTS.md.
-export function buildJudgingTask({ cfg = {}, date, count, candidatesPath }) {
+export function buildJudgingTask({
+  cfg = {},
+  date,
+  count,
+  candidatesPath,
+  runId = null,
+  outputPath: outputPathArg = null,
+}) {
   const filter = cfg.filter || {};
   const topics = Array.isArray(cfg.topics)
     ? cfg.topics.map((t) => t?.name).filter((n) => typeof n === 'string')
     : [];
-  const outputPath = `out/judgments-${date}.jsonl`;
+  // Judgments live inside the run directory — the path IS the runId binding
+  // (see src/run_store.js). Legacy fallback kept for callers without a run.
+  const outputPath =
+    outputPathArg ||
+    (runId
+      ? `out/runs/${runId}/judgments.jsonl`
+      : `out/judgments-${date}.jsonl`);
 
   // Optional: unify the digest's display language. When on, the judge also
   // returns each title rendered in `output.language`, so the reader view isn't a
@@ -113,6 +126,11 @@ export function buildJudgingTask({ cfg = {}, date, count, candidatesPath }) {
     `Write all judgments (JSONL, one per line) to ${outputPath}, then re-run:`,
     `  node bin/digest --config <cfg> --judgments ${outputPath}`
   );
+  if (runId) {
+    instructions.push(
+      `This task is bound to run ${runId} — via MCP, call apply_judgments with runId "${runId}" (do NOT re-resolve "today"; the date may roll over mid-loop).`
+    );
+  }
 
   const task = {
     task: 'universal-feeds/relevance-judging',
@@ -132,6 +150,7 @@ export function buildJudgingTask({ cfg = {}, date, count, candidatesPath }) {
     judgment_schema: schema,
     output: { path: outputPath, format: 'jsonl' },
   };
+  if (runId) task.runId = runId;
   if (translate) task.target_language = targetLanguage;
   return task;
 }
