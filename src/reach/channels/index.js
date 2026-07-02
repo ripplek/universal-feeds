@@ -220,6 +220,237 @@ export const CHANNELS = [
       search: { cmd: 'search', sourceType: 'search' },
     },
   },
+
+  // ── Tier-0 public (OpenCLI; no login, some need no browser at all). Columns
+  // verified against a live fetch; normalize aliases cover their field names. ──
+  {
+    name: 'github-trending',
+    platform: 'github',
+    description: 'GitHub Trending 仓库',
+    tier: 0,
+    backends: ['OpenCLI'],
+    hosts: ['github.com'],
+    commands: {
+      feed: { cmd: 'repos', sourceType: 'trending' },
+      trending: { cmd: 'repos', sourceType: 'trending' },
+    },
+  },
+  {
+    // `recent` needs a category arg; expose search (topic query) only.
+    name: 'arxiv',
+    platform: 'arxiv',
+    description: 'arXiv 论文',
+    tier: 0,
+    backends: ['OpenCLI'],
+    hosts: ['arxiv.org'],
+    commands: {
+      search: { cmd: 'search', sourceType: 'search' },
+    },
+  },
+  {
+    name: 'lobsters',
+    platform: 'lobsters',
+    description: 'Lobsters 技术讨论',
+    tier: 0,
+    backends: ['OpenCLI'],
+    hosts: ['lobste.rs'],
+    commands: {
+      feed: { cmd: 'active', sourceType: 'following' },
+      trending: { cmd: 'hot', sourceType: 'trending' },
+    },
+  },
+  {
+    name: 'devto',
+    platform: 'devto',
+    description: 'DEV 社区文章',
+    tier: 0,
+    backends: ['OpenCLI'],
+    hosts: ['dev.to'],
+    commands: {
+      feed: { cmd: 'latest', sourceType: 'following' },
+      trending: { cmd: 'top', sourceType: 'trending' },
+    },
+  },
+  {
+    name: 'lesswrong',
+    platform: 'lesswrong',
+    description: 'LessWrong 帖子',
+    tier: 0,
+    backends: ['OpenCLI'],
+    hosts: ['lesswrong.com'],
+    commands: {
+      feed: { cmd: 'frontpage', sourceType: 'following' },
+      trending: { cmd: 'top', sourceType: 'trending' },
+    },
+  },
+  {
+    name: 'stackoverflow',
+    platform: 'stackoverflow',
+    description: 'Stack Overflow 问答',
+    tier: 0,
+    backends: ['OpenCLI'],
+    hosts: ['stackoverflow.com'],
+    commands: {
+      trending: { cmd: 'hot', sourceType: 'trending' },
+      search: { cmd: 'search', sourceType: 'search' },
+    },
+  },
+  {
+    name: 'aibase',
+    platform: 'aibase',
+    description: 'AIbase AI 资讯',
+    tier: 0,
+    backends: ['OpenCLI'],
+    hosts: ['aibase.com'],
+    commands: {
+      feed: { cmd: 'news', sourceType: 'trending' },
+      trending: { cmd: 'news', sourceType: 'trending' },
+    },
+  },
+  {
+    // `venue` needs a venue id; expose search only.
+    name: 'openreview',
+    platform: 'openreview',
+    description: 'OpenReview 论文',
+    tier: 0,
+    backends: ['OpenCLI'],
+    hosts: ['openreview.net'],
+    commands: {
+      search: { cmd: 'search', sourceType: 'search' },
+    },
+  },
+  {
+    name: 'toutiao',
+    platform: 'toutiao',
+    description: '今日头条热榜',
+    tier: 0,
+    backends: ['OpenCLI'],
+    hosts: ['toutiao.com'],
+    commands: {
+      feed: { cmd: 'hot', sourceType: 'trending' },
+      trending: { cmd: 'hot', sourceType: 'trending' },
+    },
+  },
+
+  // ── Tier-1 (OpenCLI, needs login) ──
+  {
+    // `hot` emits no url; `recommend` (home) and `search` carry one. Verified.
+    name: 'zhihu',
+    platform: 'zhihu',
+    description: '知乎',
+    tier: 1,
+    backends: ['OpenCLI'],
+    hosts: ['zhihu.com'],
+    commands: {
+      feed: { cmd: 'recommend', sourceType: 'following' },
+      search: { cmd: 'search', sourceType: 'search' },
+    },
+  },
+  {
+    // `feed` emits no url; expose search (verified) only.
+    name: 'medium',
+    platform: 'medium',
+    description: 'Medium 文章',
+    tier: 1,
+    backends: ['OpenCLI'],
+    hosts: ['medium.com'],
+    commands: {
+      search: { cmd: 'search', sourceType: 'search' },
+    },
+  },
+  {
+    // Column mapping from OpenCLI `--help` (content→text, likes, comments, time,
+    // url); not login-verified in this session — best-effort at runtime.
+    name: 'jike',
+    platform: 'jike',
+    description: '即刻动态',
+    tier: 1,
+    backends: ['OpenCLI'],
+    hosts: ['okjike.com'],
+    commands: {
+      feed: { cmd: 'feed', sourceType: 'following' },
+      search: { cmd: 'search', sourceType: 'search' },
+    },
+  },
+  {
+    // Columns from `--help` (title, replies, created, likes, views, url); not
+    // login-verified in this session — best-effort at runtime.
+    name: 'linux-do',
+    platform: 'linux-do',
+    description: 'LINUX DO 论坛',
+    tier: 1,
+    backends: ['OpenCLI'],
+    hosts: ['linux.do'],
+    commands: {
+      feed: { cmd: 'feed', sourceType: 'following' },
+      search: { cmd: 'search', sourceType: 'search' },
+    },
+  },
+
+  // ── Academic (tier-0 public, search-only). Papers carry no reliable per-item
+  // date, so items rank on fetch time. semanticscholar/openalex were evaluated
+  // but their OpenCLI commands errored on every live run — omitted until fixed. ──
+  {
+    name: 'google-scholar',
+    platform: 'google-scholar',
+    description: 'Google Scholar 论文',
+    tier: 0,
+    backends: ['OpenCLI'],
+    hosts: ['scholar.google.com'],
+    commands: {
+      search: { cmd: 'search', sourceType: 'search' },
+    },
+  },
+  {
+    name: 'dblp',
+    platform: 'dblp',
+    description: 'dblp 计算机文献',
+    tier: 0,
+    backends: ['OpenCLI'],
+    hosts: ['dblp.org'],
+    commands: {
+      search: { cmd: 'search', sourceType: 'search' },
+    },
+  },
+  {
+    name: 'pubmed',
+    platform: 'pubmed',
+    description: 'PubMed 生物医学论文',
+    tier: 0,
+    backends: ['OpenCLI'],
+    hosts: ['pubmed.ncbi.nlm.nih.gov'],
+    commands: {
+      search: { cmd: 'search', sourceType: 'search' },
+    },
+  },
+
+  // ── News (tier-0 public RSS). No per-item timestamp surfaced → rank on fetch. ──
+  {
+    name: 'bbc',
+    platform: 'bbc',
+    description: 'BBC News',
+    tier: 0,
+    backends: ['OpenCLI'],
+    hosts: ['bbc.com', 'bbc.co.uk'],
+    commands: {
+      feed: { cmd: 'news', sourceType: 'trending' },
+      trending: { cmd: 'news', sourceType: 'trending' },
+    },
+  },
+  {
+    // url arrives as `link`, body as `summary` (both covered by normalize
+    // aliases). feed → `tech` section (AI/tech focus); trending → `main` homepage.
+    name: 'bloomberg',
+    platform: 'bloomberg',
+    description: 'Bloomberg',
+    tier: 0,
+    backends: ['OpenCLI'],
+    hosts: ['bloomberg.com'],
+    commands: {
+      feed: { cmd: 'tech', sourceType: 'trending' },
+      trending: { cmd: 'main', sourceType: 'trending' },
+    },
+  },
 ];
 
 // Note: xiaoyuzhou (小宇宙) is intentionally omitted — its OpenCLI adapter is

@@ -14,14 +14,37 @@
 import crypto from 'node:crypto';
 
 const FIELD_ALIASES = {
-  id: ['id', 'postId', 'bvid', 'note_id', 'pk', 'video_id', 'videoId'],
+  id: [
+    'id',
+    'postId',
+    'bvid',
+    'note_id',
+    'pk',
+    'video_id',
+    'videoId',
+    'group_id',
+    'pmid', // pubmed
+    'key', // dblp canonical key
+  ],
   url: ['url', 'link', 'permalink', 'url_overridden_by_dest'],
-  // `name`/`word`/`topic` are last-resort titles (e.g. producthunt product name,
-  // weibo hot-search term) — real `title` always wins.
-  title: ['title', 'word', 'name', 'topic'],
-  text: ['text', 'content', 'caption', 'selftext', 'brief', 'body', 'desc'],
+  // `repo`/`name`/`word`/`topic` are last-resort titles (github-trending repo
+  // slug, producthunt product name, weibo hot term) — real `title` always wins.
+  title: ['title', 'word', 'name', 'topic', 'repo'],
+  text: [
+    'text',
+    'content',
+    'caption',
+    'selftext',
+    'brief',
+    'body',
+    'desc',
+    'description', // github-trending, medium
+    'summary',
+    'abstract',
+  ],
   authorName: [
     'author',
+    'authors', // arxiv, hugging face, openreview
     'user',
     'screen_name',
     'username',
@@ -33,6 +56,10 @@ const FIELD_ALIASES = {
     'created_utc',
     'published_at',
     'published', // youtube feed/search (relative, e.g. "10小时前")
+    'creation_date', // stackoverflow
+    'pdate', // openreview
+    'lastModified', // hugging face models
+    'created', // linux.do
     'posted_at',
     'publishedAt',
     'createTime',
@@ -44,22 +71,27 @@ const FIELD_ALIASES = {
     'likes',
     'like',
     'score',
-    'reactions',
+    'reactions', // dev.to
     'votes',
     'upvotes',
+    'karma', // lesswrong
+    'stars', // github-trending
+    'claps', // medium
+    'cited', // google-scholar (citation count as impact proxy)
     'favorite_count',
     'digg_count',
   ],
-  view: ['views', 'view', 'play', 'plays', 'view_count'],
+  view: ['views', 'view', 'play', 'plays', 'view_count', 'downloads'],
   reply: [
     'comments',
     'comment',
     'reply',
     'replies',
+    'answers', // stackoverflow
     'num_comments',
     'reply_count',
   ],
-  repost: ['reposts', 'repost', 'shares', 'share', 'retweetCount'],
+  repost: ['reposts', 'repost', 'shares', 'share', 'retweetCount', 'forks'],
 };
 
 function pick(row, aliases) {

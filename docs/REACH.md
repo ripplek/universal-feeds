@@ -72,6 +72,7 @@ platform's feed/trending command.
 | Channel     | platform      | feed cmd   | search | verified              |
 | ----------- | ------------- | ---------- | ------ | --------------------- |
 | twitter     | `x`           | `timeline` | ✅     | fields (live)         |
+| youtube     | `youtube`     | `feed`     | ✅     | end-to-end (live)     |
 | reddit      | `reddit`      | `home`     | ✅     | end-to-end (live)     |
 | bilibili    | `bilibili`    | `dynamic`  | ✅     | fields (live)         |
 | xiaohongshu | `xiaohongshu` | `feed`     | ✅     | fields (live)         |
@@ -87,6 +88,36 @@ platform's feed/trending command.
 | tiktok      | `tiktok`      | `explore`  | ✅     | adapter columns       |
 | substack    | `substack`    | `feed`     | ✅     | adapter columns       |
 
+Tier-0 public + AI/tech additions (OpenCLI; most need no login, but still gated
+by the OpenCLI health check — desktop only):
+
+| Channel         | platform        | feed cmd    | search | verified              |
+| --------------- | --------------- | ----------- | ------ | --------------------- |
+| github-trending | `github`        | `repos`     | —      | end-to-end (live)     |
+| arxiv           | `arxiv`         | — (search)  | ✅     | end-to-end (live)     |
+| lobsters        | `lobsters`      | `active`    | —      | end-to-end (live)     |
+| devto           | `devto`         | `latest`    | —      | end-to-end (live)     |
+| lesswrong       | `lesswrong`     | `frontpage` | —      | end-to-end (live)     |
+| stackoverflow   | `stackoverflow` | `hot`       | ✅     | end-to-end (live)     |
+| aibase          | `aibase`        | `news`      | —      | end-to-end (live)     |
+| openreview      | `openreview`    | — (search)  | ✅     | end-to-end (live)     |
+| toutiao         | `toutiao`       | `hot`       | —      | end-to-end (live)     |
+| zhihu           | `zhihu`         | `recommend` | ✅     | end-to-end (live)     |
+| medium          | `medium`        | — (search)  | ✅     | end-to-end (live)     |
+| jike            | `jike`          | `feed`      | ✅     | wired; not logged in§ |
+| linux-do        | `linux-do`      | `feed`      | ✅     | wired; not logged in§ |
+
+Academic + news (tier-0 public; academic is search-only, news is RSS headlines —
+neither carries a reliable per-item date, so items rank on fetch time):
+
+| Channel        | platform         | feed cmd   | search | verified          |
+| -------------- | ---------------- | ---------- | ------ | ----------------- |
+| google-scholar | `google-scholar` | — (search) | ✅     | end-to-end (live) |
+| dblp           | `dblp`           | — (search) | ✅     | end-to-end (live) |
+| pubmed         | `pubmed`         | — (search) | ✅     | end-to-end (live) |
+| bbc            | `bbc`            | `news`     | —      | end-to-end (live) |
+| bloomberg      | `bloomberg`      | `tech`     | —      | end-to-end (live) |
+
 \* facebook/instagram live fetches returned empty this run (feed may require
 scroll/interaction); mapping is from the OpenCLI adapter's declared columns.
 † linkedin is tier-2 (OpenCLI backend `off` until configured); `search` is
@@ -97,6 +128,17 @@ intentionally not a channel — its adapter is podcast-lookup only, with no
 feed/search command.
 ‡ producthunt's OpenCLI `hot` command errored on a live run (page/anti-bot);
 the channel is wired and the pipeline skips it best-effort when it fails.
+§ jike/linux-do map cleanly from their OpenCLI `--help` columns but were not
+logged in during verification; they health-gate to `[]` until you log in.
+Notes on the additions: arxiv/openreview/medium are **search-only** (their
+`feed`-style command needs an argument or emits rows without a `url`);
+lesswrong/aibase/toutiao/zhihu carry no per-item timestamp, so those items rank
+on fetch time. Hugging Face was evaluated but dropped — `top` (papers) emits no
+`url` and `models` has no title, so neither yields a usable digest item.
+Also evaluated and omitted: **semanticscholar** / **openalex** (OpenCLI command
+errored on every live run), **reuters** (search is login-gated), **bluesky**
+(`search` returns users and `trending` returns topics, not posts), and
+**yahoo** (generic Bing-backed web search, too noisy for a curated digest).
 
 Output is mapped to `FeedItem` (see `docs/SCHEMA.md`) by a defensive,
 alias-based normalizer (`src/reach/normalize.js`) so minor per-command column
