@@ -32,15 +32,27 @@ export const SOURCES = [
   {
     id: 'rss',
     enabled: (cfg) => platformOn(cfg, 'rss', 'trending'),
-    fetch: (cfg, { fetchedAt, outDir }) =>
-      fetchRssFromPacks({
+    fetch: async (cfg, { fetchedAt, outDir }) => {
+      // Per-feed counts flow into sourceHealth so a single dead feed inside
+      // the rss aggregate is never silent (a platform-level total would hide
+      // "the OpenAI/Anthropic feeds all failed but rss looks normal").
+      const feeds = [];
+      const items = await fetchRssFromPacks({
         packs: cfg.platforms.rss.packs || [],
         fetchedAt,
         maxPerSource: 20,
         cachePath: path.join(outDir, 'state-html.json'),
         rsshub: cfg.rsshub,
         htmlSources: cfg.html_sources,
-      }),
+        onFeed: (f) => feeds.push(f),
+      });
+      return {
+        items,
+        perSource: [
+          { source: 'rss', platform: 'rss', fetched: items.length, feeds },
+        ],
+      };
+    },
   },
   {
     id: 'v2ex',
@@ -56,9 +68,14 @@ export const SOURCES = [
     fetch: async (cfg, { fetchedAt }) => {
       const reachConfig = new ReachConfig();
       const out = [];
+      const perSource = [];
       for (const ch of getAllChannels()) {
         const rc = cfg?.platforms?.[ch.name]?.reach;
         if (!rc?.enabled) continue;
+        // Every enabled channel gets an entry — including the non-throw
+        // failure branches inside fetchViaReach (health gate, no command,
+        // missing query), which used to vanish into console.error + [].
+        const entry = { source: 'reach', platform: ch.name, channel: ch.name };
         try {
           const items = await fetchViaReach({
             platform: ch.name,
@@ -67,14 +84,22 @@ export const SOURCES = [
             limit: rc.limit,
             config: reachConfig,
             fetchedAt,
+            onOutcome: (o) => {
+              if (o?.status && o.status !== 'ok') entry.outcome = o.status;
+              if (o?.message) entry.message = o.message;
+            },
           });
           if (Array.isArray(rc.tags)) for (const it of items) it.tags = rc.tags;
+          entry.fetched = items.length;
           out.push(...items);
         } catch (e) {
-          console.error(`# reach: ${ch.name} failed: ${e?.message || e}`);
+          entry.fetched = 0;
+          entry.error = String(e?.message || e);
+          console.error(`# reach: ${ch.name} failed: ${entry.error}`);
         }
+        perSource.push(entry);
       }
-      return out;
+      return { items: out, perSource };
     },
   },
 ];
@@ -87,20 +112,34 @@ function isEnabled(s, cfg) {
   }
 }
 
-// Fetch every enabled source into one FeedItem[]. `sources` is injectable for
-// tests. Each source is isolated: a throw warns and yields nothing.
+// Fetch every enabled source into `{items, perSource}`. `sources` is
+// injectable for tests. Each source is isolated: a throw is captured as a
+// structured perSource error and yields nothing — never silent, never fatal.
+// A source's fetch may return a plain FeedItem[] (a single perSource entry is
+// synthesized) or `{items, perSource}` for per-channel/per-feed detail.
 export async function fetchAllSources(cfg, ctx, sources = SOURCES) {
   const out = [];
+  const perSource = [];
   for (const s of sources) {
     if (!isEnabled(s, cfg)) continue;
     try {
-      const items = await s.fetch(cfg, ctx);
-      if (Array.isArray(items)) out.push(...items);
+      const res = await s.fetch(cfg, ctx);
+      if (Array.isArray(res)) {
+        out.push(...res);
+        perSource.push({ source: s.id, platform: s.id, fetched: res.length });
+      } else if (res && Array.isArray(res.items)) {
+        out.push(...res.items);
+        if (Array.isArray(res.perSource)) perSource.push(...res.perSource);
+      } else {
+        perSource.push({ source: s.id, platform: s.id, fetched: 0 });
+      }
     } catch (e) {
-      console.error(`# source ${s.id} failed: ${e?.message || e}`);
+      const error = String(e?.message || e);
+      perSource.push({ source: s.id, platform: s.id, fetched: 0, error });
+      console.error(`# source ${s.id} failed: ${error}`);
     }
   }
-  return out;
+  return { items: out, perSource };
 }
 
 // Run each enabled source's optional `enrich(items, cfg, ctx)` hook in order

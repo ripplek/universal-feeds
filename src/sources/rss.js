@@ -112,6 +112,7 @@ export async function fetchRssFromPacks({
   cachePath = null,
   rsshub = null,
   htmlSources = null,
+  onFeed = null, // per-feed outcome: ({feed, pack, fetched, error?}) — health seam
 }) {
   const items = [];
   const state = cachePath ? loadState(cachePath) : { html: {} };
@@ -129,12 +130,20 @@ export async function fetchRssFromPacks({
         url = rsshubUrl({ rsshub }, s.rsshub_route);
       }
       if (!url) continue;
+      const feedKey = s.name || url;
+      const before = items.length;
 
       if (s.type === 'rss') {
         let xml;
         try {
           xml = await fetchText(url);
-        } catch {
+        } catch (e) {
+          onFeed?.({
+            feed: feedKey,
+            pack: packPath,
+            fetched: 0,
+            error: String(e?.message || e),
+          });
           continue;
         }
 
@@ -188,13 +197,24 @@ export async function fetchRssFromPacks({
             tags: s.tags || undefined,
           });
         }
+        onFeed?.({
+          feed: feedKey,
+          pack: packPath,
+          fetched: items.length - before,
+        });
       } else if (s.type === 'html') {
         // Best-effort HTML source: treat each configured URL as one item.
         // Useful for vendors that don't publish RSS.
         let html;
         try {
           html = await fetchText(url);
-        } catch {
+        } catch (e) {
+          onFeed?.({
+            feed: feedKey,
+            pack: packPath,
+            fetched: 0,
+            error: String(e?.message || e),
+          });
           continue;
         }
 
@@ -278,6 +298,11 @@ export async function fetchRssFromPacks({
           publishedAt,
           fetchedAt,
           tags: s.tags || undefined,
+        });
+        onFeed?.({
+          feed: feedKey,
+          pack: packPath,
+          fetched: items.length - before,
         });
       }
     }

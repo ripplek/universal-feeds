@@ -47,7 +47,10 @@ function interestScore(item, profile) {
   return s;
 }
 
-function capDiversity(items, { maxPerSource = 2, maxPerDomain = 3 } = {}) {
+export function capDiversity(
+  items,
+  { maxPerSource = 2, maxPerDomain = 3 } = {}
+) {
   const srcCount = new Map();
   const domCount = new Map();
   const out = [];

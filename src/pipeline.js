@@ -11,103 +11,135 @@ import {
   buildCandidates,
   serializeCandidates,
   buildJudgingTask,
-  candidateKey,
 } from './candidates.js';
-import { parseJudgments, indexJudgments } from './judgments.js';
 import { assembleDigest } from './assemble.js';
 import { renderDigestMarkdown, renderReaderDigest } from './render.js';
+import { buildSourceHealth, formatHealthLine } from './health.js';
+import {
+  createRun,
+  writeRunSnapshot,
+  writeRunFile,
+  configHashes,
+} from './run_store.js';
 
-// Fetch + de-noise + de-dup + recency filter — the prefix every stage shares.
-// `sources` is injectable (defaults to the SOURCES registry) for tests. This is
-// the single fetch seam: run it once and both candidate emission and rendering
-// can be derived from the same item set.
+// Mechanisms only — run orchestration (which run to use, judgments validation,
+// status/health contract) lives in src/operations.js. Data flow:
+//
+//   createRunSnapshot        fetch → de-noise → dedup → recency → enrich
+//        │                   → out/runs/<runId>/{items.jsonl, meta.json}
+//        ▼
+//   emitCandidatesForRun     items.jsonl → candidates.jsonl + judging-task.json
+//        ▼                                  (agent judges → judgments.jsonl)
+//   renderFromItems          snapshot items + judgeIndex → digest/inspection
+//                            (zero network, zero wall-clock: now = fetchedAt)
+
+// Fetch + de-noise + de-dup + recency filter. The recency cut happens exactly
+// once, at fetch time, anchored to fetchedAt — a snapshot replay never
+// re-filters by the current clock (items would silently vanish mid-judging).
 export async function collectBaseItems({ cfg, outDir, fetchedAt, sources }) {
-  let items = await fetchAllSources(cfg, { fetchedAt, outDir }, sources);
+  const { items: fetched, perSource } = await fetchAllSources(
+    cfg,
+    { fetchedAt, outDir },
+    sources
+  );
 
-  items = filterXNoise(items, cfg);
+  let items = filterXNoise(fetched, cfg);
   items = dedupItems(items);
 
-  // Hard recency filter (product behavior): drop items older than recency_hours
-  // when publishedAt is known.
   const recencyH = cfg?.output?.recency_hours ?? 24;
-  const nowMs = Date.now();
-  return items.filter((it) => {
+  const nowMs = Date.parse(fetchedAt) || Date.now();
+  items = items.filter((it) => {
     const ts = Date.parse(it.publishedAt || '');
     if (!Number.isFinite(ts)) return true;
     const ageH = (nowMs - ts) / 36e5;
     return ageH <= recencyH;
   });
+  return { items, perSource };
 }
 
-// Stage 1: emit the compact candidate list + a self-contained judging task from
-// already-collected base items. See SKILL.md + docs/FILTERING.md + AGENTS.md.
-export function emitCandidatesFromItems({ items, cfg, date, outDir }) {
+// One fetch → one immutable run. Items are stored POST-enrich so a replay is
+// byte-stable (no unfurl network/cache side effects at render time); a failing
+// enricher degrades to unenriched items rather than blocking the snapshot.
+export async function createRunSnapshot({ cfg, date, outDir, sources }) {
+  const fetchedAt = new Date().toISOString();
+  const collected = await collectBaseItems({ cfg, outDir, fetchedAt, sources });
+  const items = await runEnrichers(
+    collected.items,
+    cfg,
+    { fetchedAt, outDir },
+    sources
+  );
+  const { runId, dir } = createRun(outDir, date);
+  const { filterHash, cfgHash } = configHashes(cfg);
+  writeRunSnapshot(dir, {
+    items,
+    meta: {
+      runId,
+      date,
+      fetchedAt,
+      filterHash,
+      cfgHash,
+      perSource: collected.perSource,
+      count: items.length,
+    },
+  });
+  return { runId, dir, items, perSource: collected.perSource, fetchedAt };
+}
+
+// Stage 1 artifacts, written INTO the run directory: the compact candidate
+// list and the self-contained judging task (carries runId; the judgments
+// output path inside the run dir is the binding).
+export function emitCandidatesForRun({ runId, dir, items, cfg, date }) {
   const cands = buildCandidates(items, {
     maxTextLen: cfg?.filter?.max_text_len ?? 500,
   });
-  const candidatesPath = path.join(outDir, `candidates-${date}.jsonl`);
-  fs.writeFileSync(candidatesPath, serializeCandidates(cands), 'utf8');
+  const candidatesPath = path.join(dir, 'candidates.jsonl');
+  writeRunFile(dir, 'candidates.jsonl', serializeCandidates(cands));
 
-  const judgingTaskPath = path.join(outDir, `judging-task-${date}.json`);
+  const judgingTaskPath = path.join(dir, 'judging-task.json');
   const task = buildJudgingTask({
     cfg,
     date,
     count: cands.length,
     candidatesPath,
+    runId,
+    outputPath: path.join(dir, 'judgments.jsonl'),
   });
-  fs.writeFileSync(judgingTaskPath, JSON.stringify(task, null, 2), 'utf8');
+  writeRunFile(dir, 'judging-task.json', JSON.stringify(task, null, 2));
 
   return { candidatesPath, judgingTaskPath, count: cands.length };
 }
 
-// Resolve the relevance gate input (I/O stays in the shell). AI judgments when
-// filter.mode is llm/hybrid and a judgments file is present; otherwise null →
-// assembleDigest uses the keyword matcher.
-function resolveJudgeIndex(cfg, judgmentsPath) {
-  const filterMode = cfg?.filter?.mode || 'keyword';
-  let judgeIndex = null;
-  if ((filterMode === 'llm' || filterMode === 'hybrid') && judgmentsPath) {
-    try {
-      judgeIndex = indexJudgments(
-        parseJudgments(fs.readFileSync(judgmentsPath, 'utf8'))
-      );
-    } catch (e) {
-      console.error(
-        `# filter: could not read judgments ${judgmentsPath}: ${e?.message || e}`
-      );
-    }
-  }
-  if (filterMode === 'llm' && !judgeIndex) {
-    console.error(
-      '# filter: mode=llm but no --judgments file; falling back to keyword gate'
-    );
-  }
-  return judgeIndex;
+export function readJudgingTask(dir) {
+  return JSON.parse(
+    fs.readFileSync(path.join(dir, 'judging-task.json'), 'utf8')
+  );
 }
 
-// Full render from already-collected base items: enrich → assemble → write.
-export async function renderFromItems({
+// Full render from snapshot items. No enrichment and no judgments-file I/O
+// here — the caller (operations) validates judgments and passes the index.
+// `fetchedAt` doubles as the ranking clock so scores don't drift between
+// judging and rendering.
+export function renderFromItems({
   items,
   cfg,
   date,
   outDir,
   fetchedAt,
-  judgmentsPath,
+  judgeIndex = null,
+  perSource = [],
 }) {
-  // Post-fetch enrichment (per-source `enrich` hook; e.g. X unfurl — I/O).
-  items = await runEnrichers(items, cfg, { fetchedAt, outDir });
+  const sourceHealth = buildSourceHealth({ perSource, cfg });
+  const healthLine = formatHealthLine(sourceHealth, cfg);
 
-  const judgeIndex = resolveJudgeIndex(cfg, judgmentsPath);
-
-  // Pure core: rank → topic/relevance gate → recommended → postScore → trim.
   const assembled = assembleDigest({
     items,
     cfg,
     judgeIndex,
     postScore: collectPostScore(cfg),
+    nowMs: Date.parse(fetchedAt) || Date.now(),
   });
   const outItems = assembled.items;
-  const recommended = assembled.recommended;
 
   const itemsPath = path.join(outDir, `items-${date}.jsonl`);
   const jsonl =
@@ -121,7 +153,9 @@ export async function renderFromItems({
     cfg,
     date,
     fetchedAt,
-    recommended,
+    recommended: assembled.recommended,
+    recommendedJudged: assembled.recommendedJudged,
+    healthLine,
   });
   fs.writeFileSync(digestPath, readerMd, 'utf8');
 
@@ -131,57 +165,15 @@ export async function renderFromItems({
     cfg,
     date,
     fetchedAt,
-    recommended,
+    recommended: assembled.recommended,
   });
   fs.writeFileSync(inspectionPath, inspectionMd, 'utf8');
 
-  return { itemsPath, digestPath, inspectionPath, count: outItems.length };
-}
-
-export async function runDigest({
-  cfg,
-  date,
-  outDir,
-  stage = 'full',
-  judgmentsPath,
-}) {
-  const fetchedAt = new Date().toISOString();
-  const items = await collectBaseItems({ cfg, outDir, fetchedAt });
-
-  if (stage === 'candidates') {
-    return emitCandidatesFromItems({ items, cfg, date, outDir });
-  }
-  return renderFromItems({
-    items,
-    cfg,
-    date,
-    outDir,
-    fetchedAt,
-    judgmentsPath,
-  });
-}
-
-// Render the digest AND report the candidate id set — from a single fetch. The
-// returned candidateIds are exactly the base pool the render is derived from, so
-// a caller can validate judgments against the same set the digest is gated on
-// (no drift between a separate validate fetch and the render fetch).
-export async function runFullDigestOnce({
-  cfg,
-  date,
-  outDir,
-  judgmentsPath,
-  sources,
-}) {
-  const fetchedAt = new Date().toISOString();
-  const items = await collectBaseItems({ cfg, outDir, fetchedAt, sources });
-  const candidateIds = items.map(candidateKey);
-  const result = await renderFromItems({
-    items,
-    cfg,
-    date,
-    outDir,
-    fetchedAt,
-    judgmentsPath,
-  });
-  return { ...result, candidateIds };
+  return {
+    itemsPath,
+    digestPath,
+    inspectionPath,
+    count: outItems.length,
+    sourceHealth,
+  };
 }

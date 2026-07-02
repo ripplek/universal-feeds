@@ -1,11 +1,14 @@
-function hoursAgo(iso) {
+function hoursAgo(iso, nowMs) {
   if (!iso) return Infinity;
   const t = Date.parse(iso);
   if (!Number.isFinite(t)) return Infinity;
-  return (Date.now() - t) / 36e5;
+  return (nowMs - t) / 36e5;
 }
 
-export function rankItems(items, cfg) {
+// `nowMs` is injectable so a render replayed from a run snapshot ranks with
+// the snapshot's fetchedAt as "now" — recency scores must not drift with the
+// wall clock between judging and rendering.
+export function rankItems(items, cfg, nowMs = Date.now()) {
   const recencyHours = cfg?.output?.recency_hours ?? 24;
   const platformWeights = cfg?.ranking?.platform_weights || {};
   // Reach trending lists (e.g. 36kr hot, HN top) often carry no engagement
@@ -25,7 +28,7 @@ export function rankItems(items, cfg) {
       // log scale so X doesn't drown everything.
       const engagement = Math.log1p(engagementRaw);
 
-      const ageH = hoursAgo(x.publishedAt);
+      const ageH = hoursAgo(x.publishedAt, nowMs);
       const recencyBoost =
         ageH <= recencyHours ? (recencyHours - ageH) / recencyHours : 0;
 

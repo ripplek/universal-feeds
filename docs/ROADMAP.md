@@ -27,6 +27,19 @@ Legend: `[x]` done · `[~]` partial · `[ ]` not started.
 - [ ] Summarization pipeline (top N only) — not integrated yet (renderer has the hook; no `summarize` call)
 - [~] Unit tests per adapter — core modules covered (rank, dedup, render, tagging, unfurl, recommend, rsshub, x, reach normalize incl. YouTube locale parsing); RSS / V2EX adapters still lack dedicated tests
 
+## Phase 2.5 — Reliability: trustworthy daily (run-snapshot)
+
+Design: run-snapshot architecture — single-fetch runs under `out/runs/<runId>/`,
+sourceHealth contract, unified relevance gate, `digest daily` state machine
+(agent-session delivery). Approved 2026-07-02 (office-hours design doc).
+
+- [ ] Run snapshot seam + sourceHealth + `daily` (core plan — see design doc)
+- [ ] Pack-level rss health — single dead feed inside the rss platform is still
+      silent in platform-level sourceHealth (P2, deferred from run-snapshot v1)
+- [ ] Per-channel history baseline — escalate to error only after N consecutive
+      zero-item days, to split one-off empties from chronic channel death
+      (P3, needs a few days of real run data to calibrate)
+
 ## Phase 3 — CN platforms expansion
 
 - [x] Weibo adapter — via reach layer (`feed` + `hot`, OpenCLI); native `src/sources/weibo*` not needed
