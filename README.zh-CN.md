@@ -32,6 +32,28 @@
 见 `docs/adr/0001-*.md`）；CI 跑单元测试加一个 digest 冒烟测试。公开源（RSS /
 V2EX / HN / 36 氪）不需登录，其余（含 YouTube）按需开启、前提是你已登录对应站点。
 
+## 实际效果
+
+这是一次真实运行、未经编辑——2026-07-08，`filter.mode: hybrid`，启用了 9 个源
+（RSS + V2EX + 8 个 reach 渠道）：**203 条候选 → 渲染出 40 条**，数据源健康横幅
+把 `v2ex` 的空抓取直接曝光出来，而不是悄悄生成一份变薄的简报：
+
+```text
+# 每日简报 — 2026-07-08
+
+> ⚠ 数据源健康 — 今日无产出：v2ex
+
+## Agentic AI / 工作流
+
+- 我们常用的Fable 5使用模式之一：把它当"顾问"——由执行者（Sonnet 5）调用Fable 5获取指导 — ClaudeDevs (X, 2026-07-07)
+  https://x.com/ClaudeDevs/status/2074606058128224365
+- Anthropic将Claude Cowork上线移动端和网页端 (RSS, 2026-07-07)
+  https://www.theverge.com/ai-artificial-intelligence/961978/anthropic-claude-cowork-mobile-web
+```
+
+完整简报、运行报告，以及一张早期截图见
+[`docs/SHOWCASE.md`](docs/SHOWCASE.md)。
+
 ## 快速开始
 
 ```bash
@@ -89,6 +111,7 @@ platforms:
 
 | 主题            | 文件                                           |
 | --------------- | ---------------------------------------------- |
+| 展示 / 真实运行 | [`docs/SHOWCASE.md`](docs/SHOWCASE.md)         |
 | 安装 / 配置     | [`INSTALL.md`](INSTALL.md)                     |
 | 更新 / 维护     | [`UPDATE.md`](UPDATE.md)                       |
 | reach 层        | [`docs/REACH.md`](docs/REACH.md)               |

@@ -40,6 +40,29 @@ desktop-only (it reuses a running Chrome — see `docs/adr/0001-*.md`); CI runs 
 unit tests plus a digest smoke test. Public sources (RSS / V2EX / HN /
 36Kr) need no login; the rest (YouTube included) are opt-in once you're signed in.
 
+## See it in action
+
+This is a real run, unedited — 2026-07-08, `filter.mode: hybrid`, 9 sources
+enabled (RSS + V2EX + 8 reach channels): **203 candidates → 40 rendered
+items**, with the source-health banner surfacing `v2ex`'s empty fetch instead
+of silently shipping a shorter digest:
+
+```text
+# 每日简报 — 2026-07-08
+
+> ⚠ 数据源健康 — 今日无产出：v2ex
+
+## Agentic AI / 工作流
+
+- 我们常用的Fable 5使用模式之一：把它当"顾问"——由执行者（Sonnet 5）调用Fable 5获取指导 — ClaudeDevs (X, 2026-07-07)
+  https://x.com/ClaudeDevs/status/2074606058128224365
+- Anthropic将Claude Cowork上线移动端和网页端 (RSS, 2026-07-07)
+  https://www.theverge.com/ai-artificial-intelligence/961978/anthropic-claude-cowork-mobile-web
+```
+
+Full digest, run report, and an earlier screenshot in
+[`docs/SHOWCASE.md`](docs/SHOWCASE.md).
+
 ## Quick start
 
 ```bash
@@ -129,6 +152,7 @@ platforms:
 
 | Topic                | File                                           |
 | -------------------- | ---------------------------------------------- |
+| Showcase / real run  | [`docs/SHOWCASE.md`](docs/SHOWCASE.md)         |
 | Agent integration    | [`AGENTS.md`](AGENTS.md)                       |
 | Install / setup      | [`INSTALL.md`](INSTALL.md)                     |
 | Update / maintenance | [`UPDATE.md`](UPDATE.md)                       |

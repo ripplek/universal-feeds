@@ -1,0 +1,172 @@
+{
+  "runId": "2026-07-08-1",
+  "date": "2026-07-08",
+  "fetchedAt": "2026-07-08T02:00:40.713Z",
+  "generatedAt": "2026-07-08T02:07:02.971Z",
+  "health": "warning",
+  "sourceHealth": [
+    {
+      "source": "rss",
+      "platform": "rss",
+      "enabled": true,
+      "fetched": 165,
+      "severity": "ok",
+      "feeds": [
+        {
+          "feed": "OpenAI News",
+          "pack": "sources/us-ai-labs.yaml",
+          "fetched": 20
+        },
+        {
+          "feed": "Google DeepMind Blog",
+          "pack": "sources/us-ai-labs.yaml",
+          "fetched": 20
+        },
+        {
+          "feed": "Anthropic Claude Opus (landing)",
+          "pack": "sources/us-ai-labs.yaml",
+          "fetched": 1
+        },
+        {
+          "feed": "Anthropic Claude Sonnet (landing)",
+          "pack": "sources/us-ai-labs.yaml",
+          "fetched": 1
+        },
+        {
+          "feed": "Anthropic Claude Haiku (landing)",
+          "pack": "sources/us-ai-labs.yaml",
+          "fetched": 1
+        },
+        {
+          "feed": "The Verge",
+          "pack": "sources/us-tech.yaml",
+          "fetched": 10
+        },
+        {
+          "feed": "TechCrunch",
+          "pack": "sources/us-tech.yaml",
+          "fetched": 20
+        },
+        {
+          "feed": "WIRED",
+          "pack": "sources/us-tech.yaml",
+          "fetched": 20
+        },
+        {
+          "feed": "Ars Technica",
+          "pack": "sources/us-tech.yaml",
+          "fetched": 20
+        },
+        {
+          "feed": "Hacker News (frontpage)",
+          "pack": "sources/us-tech.yaml",
+          "fetched": 20
+        },
+        {
+          "feed": "Product Hunt (newest)",
+          "pack": "sources/us-tech.yaml",
+          "fetched": 20
+        },
+        {
+          "feed": "36氪",
+          "pack": "sources/cn-tech.yaml",
+          "fetched": 1
+        },
+        {
+          "feed": "虎嗅",
+          "pack": "sources/cn-tech.yaml",
+          "fetched": 1
+        },
+        {
+          "feed": "少数派",
+          "pack": "sources/cn-tech.yaml",
+          "fetched": 10
+        },
+        {
+          "feed": "机器之心",
+          "pack": "sources/cn-tech.yaml",
+          "fetched": 0
+        }
+      ]
+    },
+    {
+      "source": "v2ex",
+      "platform": "v2ex",
+      "enabled": true,
+      "fetched": 0,
+      "severity": "warning",
+      "message": "enabled source returned zero items"
+    },
+    {
+      "source": "reach",
+      "platform": "twitter",
+      "enabled": true,
+      "fetched": 15,
+      "severity": "ok",
+      "channel": "twitter"
+    },
+    {
+      "source": "reach",
+      "platform": "youtube",
+      "enabled": true,
+      "fetched": 15,
+      "severity": "ok",
+      "channel": "youtube"
+    },
+    {
+      "source": "reach",
+      "platform": "reddit",
+      "enabled": true,
+      "fetched": 20,
+      "severity": "ok",
+      "channel": "reddit"
+    },
+    {
+      "source": "reach",
+      "platform": "bilibili",
+      "enabled": true,
+      "fetched": 15,
+      "severity": "ok",
+      "channel": "bilibili"
+    },
+    {
+      "source": "reach",
+      "platform": "xiaohongshu",
+      "enabled": true,
+      "fetched": 15,
+      "severity": "ok",
+      "channel": "xiaohongshu"
+    },
+    {
+      "source": "reach",
+      "platform": "weibo",
+      "enabled": true,
+      "fetched": 15,
+      "severity": "ok",
+      "channel": "weibo"
+    },
+    {
+      "source": "reach",
+      "platform": "hackernews",
+      "enabled": true,
+      "fetched": 20,
+      "severity": "ok",
+      "channel": "hackernews"
+    },
+    {
+      "source": "reach",
+      "platform": "36kr",
+      "enabled": true,
+      "fetched": 15,
+      "severity": "ok",
+      "channel": "36kr"
+    }
+  ],
+  "judgmentCoverage": {
+    "candidates": 203,
+    "judged": 203,
+    "missing": 0
+  },
+  "itemCount": 40,
+  "warnings": []
+}
